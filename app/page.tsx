@@ -7,9 +7,10 @@ import { MdEmail, MdLocationOn } from "react-icons/md";
 import { supabase } from "@/lib/supabase";
 
 const categories = [
-  { title: "Home Appliances", image: "/images/categories/home-appliances.jpg", text: "Smart living, made easy." },
-  { title: "Furniture", image: "/images/categories/furniture.jpg", text: "Comfort and style for every home." },
-  { title: "Solar Systems", image: "/images/categories/solar-systems.jpg", text: "Reliable energy for a brighter tomorrow." },
+  { title: "Home Appliances", image: "/images/categories/home-appliances.jpg", text: "Smart appliances for easier everyday living." },
+  { title: "Solar & Backup Power", image: "/images/categories/solar-systems.jpg", text: "Reliable solar, inverter and backup power solutions." },
+  { title: "Smart Electronics & Gadgets", image: "/images/categories/smart-electronics.jpg", text: "Connected gadgets, audio, security and everyday tech." },
+  { title: "Computing & Office", image: "/images/categories/computing-office.jpg", text: "Laptops, monitors, printers and office essentials." },
 ];
 
 
@@ -23,20 +24,28 @@ const heroSlides = [
     image: "/images/categories/home-appliances.jpg",
   },
   {
-    eyebrow: "MODERN FURNITURE",
-    title: "Comfort Meets.",
-    highlight: "Modern Style.",
+    eyebrow: "SMART ELECTRONICS & GADGETS",
+    title: "Stay Connected.",
+    highlight: "Live Smarter.",
     description:
-      "Create welcoming spaces with stylish furniture for your living room, bedroom and dining area.",
-    image: "/images/categories/furniture.jpg",
+      "Explore smartwatches, audio, networking, security, power accessories and useful everyday technology.",
+    image: "/images/categories/smart-electronics.jpg",
   },
   {
-    eyebrow: "RELIABLE SOLAR SYSTEMS",
-    title: "Power Your Home.",
-    highlight: "Build a Brighter Tomorrow.",
+    eyebrow: "SOLAR & BACKUP POWER",
+    title: "Reliable Energy.",
+    highlight: "Power When You Need It.",
     description:
-      "Explore dependable solar solutions for cleaner, more reliable energy at home.",
+      "Explore dependable solar, inverter and backup power solutions for homes, businesses and everyday life.",
     image: "/images/categories/solar-systems.jpg",
+  },
+  {
+    eyebrow: "COMPUTING & OFFICE",
+    title: "Work Smarter.",
+    highlight: "Stay Productive.",
+    description:
+      "Shop laptops, monitors, printers, computer accessories and networking essentials for work and study.",
+    image: "/images/categories/computing-office.jpg",
   },
 ];
 
@@ -196,12 +205,17 @@ export default function Home() {
         </div>
         <nav className="border-t border-slate-100">
           <div className="mx-auto hidden max-w-7xl items-center justify-between px-4 text-sm font-bold md:flex sm:px-6">
-            <a className="bg-[#0798ef] px-6 py-4 text-white transition duration-200 hover:bg-[#087bd0] hover:shadow-[0_0_20px_rgba(7,152,239,.35)]" href="#home">Home</a>
-            <a href="#categories" className="relative py-4 transition duration-200 hover:text-[#0798ef] after:absolute after:bottom-2 after:left-0 after:h-0.5 after:w-0 after:bg-[#0798ef] after:transition-all after:duration-200 hover:after:w-full">Home Appliances</a><a href="#categories" className="relative py-4 transition duration-200 hover:text-[#0798ef] after:absolute after:bottom-2 after:left-0 after:h-0.5 after:w-0 after:bg-[#0798ef] after:transition-all after:duration-200 hover:after:w-full">Furniture</a><a href="#categories" className="relative py-4 transition duration-200 hover:text-[#0798ef] after:absolute after:bottom-2 after:left-0 after:h-0.5 after:w-0 after:bg-[#0798ef] after:transition-all after:duration-200 hover:after:w-full">Solar Systems</a>
-            <a href="#lipa" className="relative py-4 transition duration-200 hover:text-[#0798ef] after:absolute after:bottom-2 after:left-0 after:h-0.5 after:w-0 after:bg-[#0798ef] after:transition-all after:duration-200 hover:after:w-full">Lipa Mdogo Mdogo</a><a href="#products" className="relative py-4 transition duration-200 hover:text-[#0798ef] after:absolute after:bottom-2 after:left-0 after:h-0.5 after:w-0 after:bg-[#0798ef] after:transition-all after:duration-200 hover:after:w-full">Deals</a><a href="#about" className="relative py-4 transition duration-200 hover:text-[#0798ef] after:absolute after:bottom-2 after:left-0 after:h-0.5 after:w-0 after:bg-[#0798ef] after:transition-all after:duration-200 hover:after:w-full">About Us</a><a href="#contact" className="relative py-4 transition duration-200 hover:text-[#0798ef] after:absolute after:bottom-2 after:left-0 after:h-0.5 after:w-0 after:bg-[#0798ef] after:transition-all after:duration-200 hover:after:w-full">Contact</a>
+            <a className="bg-[#0798ef] px-6 py-4 text-white transition duration-200 hover:bg-[#087bd0]" href="#home">Home</a>
+            {["Home Appliances", "Solar & Backup Power", "Smart Electronics & Gadgets", "Computing & Office"].map((item) => (
+              <a key={item} href="#categories" className="relative py-4 transition duration-200 hover:text-[#0798ef]">{item}</a>
+            ))}
+            <a href="#lipa" className="relative py-4 transition duration-200 hover:text-[#0798ef]">Lipa Mdogo Mdogo</a>
+            <a href="#products" className="relative py-4 transition duration-200 hover:text-[#0798ef]">Deals</a>
+            <a href="#about" className="relative py-4 transition duration-200 hover:text-[#0798ef]">About Us</a>
+            <a href="#contact" className="relative py-4 transition duration-200 hover:text-[#0798ef]">Contact</a>
           </div>
           {menuOpen && <div className="grid gap-2 px-5 py-4 font-bold md:hidden">
-            {["Home","Home Appliances","Furniture","Solar Systems","Lipa Mdogo Mdogo","Deals","About Us","Contact"].map(x => <a key={x} href={x==="Home"?"#home":"#categories"} onClick={()=>setMenuOpen(false)} className="py-2">{x}</a>)}
+            {["Home","Home Appliances","Solar & Backup Power","Smart Electronics & Gadgets","Computing & Office","Lipa Mdogo Mdogo","Deals","About Us","Contact"].map(x => <a key={x} href={x==="Home"?"#home":"#categories"} onClick={()=>setMenuOpen(false)} className="py-2">{x}</a>)}
           </div>}
         </nav>
       </header>
@@ -228,7 +242,7 @@ export default function Home() {
             </p>
 
             <div className="mt-6 inline-block rounded-xl bg-[#ffb51b] px-5 py-3 font-black text-[#082d4c] shadow-lg transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_25px_rgba(255,181,27,.45)]">
-              Cash &amp; Lipa Mdogo Mdogo Available
+              Flexible Payment Options on Selected Products
             </div>
 
             <div className="mt-7 flex flex-wrap gap-3">
@@ -468,10 +482,11 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-5 px-4 py-14 sm:px-6 lg:grid-cols-3">
-        <div className="rounded-2xl bg-[#d9efff] p-8 transition duration-300 hover:-translate-y-1 hover:shadow-lg"><h3 className="text-2xl font-black">Power Your Home with Solar</h3><p className="mt-2">Reliable. Affordable. Sustainable.</p></div>
-        <div className="rounded-2xl bg-[#fff0dc] p-8 transition duration-300 hover:-translate-y-1 hover:shadow-lg"><h3 className="text-2xl font-black">Upgrade Your Home</h3><p className="mt-2">Modern furniture for comfortable living.</p></div>
-        <div className="rounded-2xl bg-[#e2f2ff] p-8 transition duration-300 hover:-translate-y-1 hover:shadow-lg"><h3 className="text-2xl font-black">Modern Appliances</h3><p className="mt-2">Smart products for everyday living.</p></div>
+      <section className="mx-auto grid max-w-7xl gap-5 px-4 py-14 sm:px-6 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl bg-[#e2f2ff] p-8 transition duration-300 hover:-translate-y-1 hover:shadow-lg"><h3 className="text-2xl font-black">Modern Appliances</h3><p className="mt-2">Smart products for easier everyday living.</p></div>
+        <div className="rounded-2xl bg-[#d9efff] p-8 transition duration-300 hover:-translate-y-1 hover:shadow-lg"><h3 className="text-2xl font-black">Solar & Backup Power</h3><p className="mt-2">Reliable energy solutions for home and business.</p></div>
+        <div className="rounded-2xl bg-[#fff0dc] p-8 transition duration-300 hover:-translate-y-1 hover:shadow-lg"><h3 className="text-2xl font-black">Smart Electronics</h3><p className="mt-2">Connected gadgets, security, audio and everyday tech.</p></div>
+        <div className="rounded-2xl bg-[#eef2ff] p-8 transition duration-300 hover:-translate-y-1 hover:shadow-lg"><h3 className="text-2xl font-black">Computing & Office</h3><p className="mt-2">Technology for work, study and productivity.</p></div>
       </section>
 
       <section id="about" className="bg-white">
@@ -630,7 +645,7 @@ export default function Home() {
 
       <footer id="contact" className="bg-[#06365b] text-white">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-3">
-          <div><Image src="/images/logo/smart-tech-logo.jpg" alt="Smart Tech" width={190} height={95} className="h-16 w-auto rounded bg-white object-contain" /><p className="mt-4 max-w-sm text-sm leading-6 text-white/70">Your trusted partner for home appliances, furniture and solar systems.</p></div>
+          <div><Image src="/images/logo/smart-tech-logo.jpg" alt="Smart Tech" width={190} height={95} className="h-16 w-auto rounded bg-white object-contain" /><p className="mt-4 max-w-sm text-sm leading-6 text-white/70">Your trusted partner for home appliances, solar & backup power, smart electronics, gadgets, computing and office technology.</p></div>
           <div><h3 className="font-black">Quick Links</h3><div className="mt-4 grid gap-2 text-sm text-white/70"><a href="#home">Home</a><a href="#products">Shop</a><a href="#about" className="relative py-4 transition duration-200 hover:text-[#0798ef] after:absolute after:bottom-2 after:left-0 after:h-0.5 after:w-0 after:bg-[#0798ef] after:transition-all after:duration-200 hover:after:w-full">About Us</a><a href="#contact" className="relative py-4 transition duration-200 hover:text-[#0798ef] after:absolute after:bottom-2 after:left-0 after:h-0.5 after:w-0 after:bg-[#0798ef] after:transition-all after:duration-200 hover:after:w-full">Contact</a></div></div>
           <div>
             <h3 className="font-black">Contact Us</h3>

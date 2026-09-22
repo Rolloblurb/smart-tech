@@ -274,11 +274,15 @@ export default function AddProductForm({
               </option>
 
               <option>
-                Furniture
+                Solar &amp; Backup Power
               </option>
 
               <option>
-                Solar Systems
+                Smart Electronics &amp; Gadgets
+              </option>
+
+              <option>
+                Computing &amp; Office
               </option>
             </select>
           </label>
