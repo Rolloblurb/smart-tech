@@ -13,6 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.smarttechstore.co.ke"),
+
+  alternates: {
+    canonical: "/",
+  },
+
   title: {
     default:
       "Smart Tech Store | Appliances, Electronics, Solar & Computing Kenya",
@@ -40,30 +46,20 @@ export const metadata: Metadata = {
     "online electronics store Kenya",
   ],
 
-  authors: [
-    {
-      name: "Smart Tech Store",
-    },
-  ],
-
+  authors: [{ name: "Smart Tech Store" }],
   creator: "Smart Tech Store",
-
   publisher: "Smart Tech Store",
-
   category: "shopping",
 
   openGraph: {
     type: "website",
     locale: "en_KE",
-
+    url: "/",
     siteName: "Smart Tech Store",
-
     title:
       "Smart Tech Store | Appliances, Electronics, Solar & Computing Kenya",
-
     description:
       "Shop home appliances, smart electronics and gadgets, solar and backup power, computing and office products at Smart Tech Store in Kenya.",
-
     images: [
       {
         url: "/images/logo/smart-tech-logo.jpg",
@@ -76,22 +72,16 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-
     title:
       "Smart Tech Store | Appliances, Electronics, Solar & Computing Kenya",
-
     description:
       "Shop appliances, electronics, solar and backup power, computing and office products from Smart Tech Store in Kenya.",
-
-    images: [
-      "/images/logo/smart-tech-logo.jpg",
-    ],
+    images: ["/images/logo/smart-tech-logo.jpg"],
   },
 
   robots: {
     index: true,
     follow: true,
-
     googleBot: {
       index: true,
       follow: true,
@@ -114,9 +104,7 @@ export default function RootLayout({
       lang="en-KE"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        {children}
-      </body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }
