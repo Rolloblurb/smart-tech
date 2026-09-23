@@ -84,6 +84,9 @@ export default function Home() {
   const [cookieChoice, setCookieChoice] = useState<CookieChoice | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Products");
+  const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [imageZoom, setImageZoom] = useState(1);
 
   const filteredProducts = products.filter((product) => {
     const query = searchQuery.trim().toLowerCase();
@@ -104,6 +107,49 @@ export default function Home() {
     }, 0);
   };
 
+
+  const openProductGallery = (product: StoreProduct, imageIndex = 0) => {
+    setSelectedProduct(product);
+    setActiveImageIndex(imageIndex);
+    setImageZoom(1);
+  };
+
+  const closeProductGallery = () => {
+    setSelectedProduct(null);
+    setActiveImageIndex(0);
+    setImageZoom(1);
+  };
+
+  const showPreviousProductImage = () => {
+    if (!selectedProduct?.product_images.length) return;
+    setActiveImageIndex((current) =>
+      (current - 1 + selectedProduct.product_images.length) % selectedProduct.product_images.length
+    );
+    setImageZoom(1);
+  };
+
+  const showNextProductImage = () => {
+    if (!selectedProduct?.product_images.length) return;
+    setActiveImageIndex((current) =>
+      (current + 1) % selectedProduct.product_images.length
+    );
+    setImageZoom(1);
+  };
+
+  useEffect(() => {
+    if (!selectedProduct) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeProductGallery();
+      if (event.key === "ArrowLeft") showPreviousProductImage();
+      if (event.key === "ArrowRight") showNextProductImage();
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedProduct]);
 
   useEffect(() => {
     const savedChoice = window.localStorage.getItem("smart-tech-cookie-consent");
@@ -495,7 +541,9 @@ export default function Home() {
                   <article key={product.id} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
                     <div className="relative h-56 overflow-hidden bg-slate-100">
                       {image ? (
-                        <img src={image} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                        <button type="button" onClick={() => openProductGallery(product)} className="h-full w-full cursor-zoom-in" aria-label={`Open ${product.name} image gallery`} title="Click to view and zoom">
+                          <img src={image} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                        </button>
                       ) : (
                         <div className="grid h-full place-items-center text-5xl">🛍️</div>
                       )}
@@ -729,6 +777,43 @@ export default function Home() {
         </div>
         <div className="border-t border-white/15 px-4 py-5 text-center text-xs text-white/60">© 2026 SMART TECH. All rights reserved. • Smart Products. A Brighter Tomorrow.</div>
       </footer>
+
+      {selectedProduct && selectedProduct.product_images.length > 0 && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label={`${selectedProduct.name} image gallery`} onClick={closeProductGallery}>
+          <div className="relative flex max-h-[96vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-6">
+              <div className="min-w-0"><h2 className="truncate text-lg font-black text-[#0b2947] sm:text-xl">{selectedProduct.name}</h2><p className="text-xs font-semibold text-slate-500">Image {activeImageIndex + 1} of {selectedProduct.product_images.length}</p></div>
+              <button type="button" onClick={closeProductGallery} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-100 text-xl font-black text-slate-700 transition hover:bg-slate-200" aria-label="Close product gallery">✕</button>
+            </div>
+            <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-auto bg-slate-950 p-3 sm:p-6">
+              <img src={selectedProduct.product_images[activeImageIndex].image_url} alt={`${selectedProduct.name} image ${activeImageIndex + 1}`} className="max-h-[62vh] max-w-full select-none object-contain transition-transform duration-200" style={{ transform: `scale(${imageZoom})`, transformOrigin: "center center", cursor: imageZoom > 1 ? "zoom-out" : "zoom-in" }} onClick={() => setImageZoom((current) => (current > 1 ? 1 : 2))} draggable={false} />
+              {selectedProduct.product_images.length > 1 && <>
+                <button type="button" onClick={showPreviousProductImage} className="absolute left-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-2xl font-black text-[#0b2947] shadow transition hover:bg-white sm:left-5" aria-label="Previous product image">‹</button>
+                <button type="button" onClick={showNextProductImage} className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-2xl font-black text-[#0b2947] shadow transition hover:bg-white sm:right-5" aria-label="Next product image">›</button>
+              </>}
+            </div>
+            <div className="border-t border-slate-200 bg-white p-4 sm:px-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex min-w-0 gap-2 overflow-x-auto pb-1">
+                  {selectedProduct.product_images.map((productImage, index) => (
+                    <button key={`${productImage.image_url}-${index}`} type="button" onClick={() => { setActiveImageIndex(index); setImageZoom(1); }} className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 ${activeImageIndex === index ? "border-[#0798ef]" : "border-transparent hover:border-slate-300"}`} aria-label={`View image ${index + 1}`}>
+                      <img src={productImage.image_url} alt="" className="h-full w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button type="button" onClick={() => setImageZoom((current) => Math.max(1, current - 0.5))} disabled={imageZoom <= 1} className="rounded-lg border border-slate-300 px-4 py-2 font-black disabled:cursor-not-allowed disabled:opacity-40" aria-label="Zoom out">−</button>
+                  <span className="min-w-16 text-center text-sm font-black text-slate-600">{Math.round(imageZoom * 100)}%</span>
+                  <button type="button" onClick={() => setImageZoom((current) => Math.min(3, current + 0.5))} disabled={imageZoom >= 3} className="rounded-lg border border-slate-300 px-4 py-2 font-black disabled:cursor-not-allowed disabled:opacity-40" aria-label="Zoom in">+</button>
+                  <button type="button" onClick={() => setImageZoom(1)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-black">Reset</button>
+                  <a href={`https://wa.me/254785709176?text=${encodeURIComponent(`Hello Smart Tech, I am interested in ${selectedProduct.name}. Please share more information about the cash and Lipa Mdogo Mdogo options.`)}`} target="_blank" rel="noopener noreferrer" className="ml-auto flex items-center gap-2 rounded-lg bg-black px-4 py-2 font-black text-white"><FaWhatsapp />Enquire</a>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-slate-500">Tap the large image to switch between 100% and 200% zoom. Use the +/− controls for up to 300% zoom.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {cookieChoice === null && (
         <div className="fixed inset-x-0 bottom-0 z-50 p-4 sm:p-6">
