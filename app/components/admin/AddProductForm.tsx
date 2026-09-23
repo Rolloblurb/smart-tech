@@ -49,194 +49,570 @@ export default function AddProductForm({
         Number(form.dailyPayment) * Number(form.paymentDays)
       : 0;
 
-  const handleSubmit = async (
-    event: FormEvent<HTMLFormElement>
-  ) => {
-    event.preventDefault();
+ const handleSubmit = async (
+  event: FormEvent<HTMLFormElement>
+) => {
+  event.preventDefault();
 
-    setSaving(true);
-    onError("");
-    onMessage("");
+  if (saving) return;
 
-    try {
+  setSaving(true);
+  onError("");
+  onMessage("");
+
+  try {
+    // ==================================================
+    // BASIC PRODUCT VALIDATION
+    // ==================================================
+
+    const name = form.name.trim();
+    const category = form.category.trim();
+    const cashPrice = Number(form.cashPrice);
+    const stockQuantity = Number(form.stockQuantity);
+
+    if (!name) {
+      throw new Error(
+        "Please enter the product name."
+      );
+    }
+
+    if (!category) {
+      throw new Error(
+        "Please select a product category."
+      );
+    }
+
+    if (
+      !form.cashPrice ||
+      Number.isNaN(cashPrice) ||
+      cashPrice < 0
+    ) {
+      throw new Error(
+        "Please enter a valid cash price."
+      );
+    }
+
+    if (
+      form.stockQuantity === "" ||
+      Number.isNaN(stockQuantity) ||
+      stockQuantity < 0
+    ) {
+      throw new Error(
+        "Please enter a valid stock quantity."
+      );
+    }
+
+    // ==================================================
+    // LIPA MDOGO MDOGO
+    // ==================================================
+
+    let depositAmount: number | null = null;
+    let dailyPayment: number | null = null;
+    let paymentDays: number | null = null;
+    let calculatedTotal: number | null = null;
+
+    if (form.lipaAvailable) {
       if (
-        form.lipaAvailable &&
-        (!form.depositAmount ||
-          !form.dailyPayment ||
-          !form.paymentDays)
+        !form.depositAmount ||
+        !form.dailyPayment ||
+        !form.paymentDays
       ) {
         throw new Error(
           "Complete all Lipa Mdogo Mdogo payment fields."
         );
       }
 
-      // ---------------------------------------
-      // CREATE PRODUCT
-      // ---------------------------------------
+      depositAmount =
+        Number(form.depositAmount);
 
-      const { data: product, error: productError } =
-        await supabase
-          .from("products")
-          .insert({
-            name: form.name.trim(),
+      dailyPayment =
+        Number(form.dailyPayment);
 
-            category: form.category,
+      paymentDays =
+        Number(form.paymentDays);
 
-            subcategory:
-              form.subcategory.trim() || null,
-
-            brand:
-              form.brand.trim() || null,
-
-            model:
-              form.model.trim() || null,
-
-            description:
-              form.description.trim() || null,
-
-            specifications:
-              form.specifications.trim() || null,
-
-            cash_price:
-              Number(form.cashPrice),
-
-            stock_quantity:
-              Number(form.stockQuantity),
-
-            availability:
-              form.availability,
-
-            featured:
-              form.featured,
-
-            lipa_mdogo_mdogo_available:
-              form.lipaAvailable,
-
-            deposit_amount:
-              form.lipaAvailable
-                ? Number(form.depositAmount)
-                : null,
-
-            daily_payment:
-              form.lipaAvailable
-                ? Number(form.dailyPayment)
-                : null,
-
-            payment_days:
-              form.lipaAvailable
-                ? Number(form.paymentDays)
-                : null,
-
-            total_payable:
-              form.lipaAvailable
-                ? totalPayable
-                : null,
-          })
-          .select("id,name")
-          .single();
-
-      if (productError) {
-        throw productError;
-      }
-
-      // ---------------------------------------
-      // UPLOAD PRODUCT IMAGES
-      // ---------------------------------------
-
-      for (
-        let index = 0;
-        index < images.length;
-        index += 1
+      if (
+        Number.isNaN(depositAmount) ||
+        depositAmount < 0
       ) {
-        const file = images[index];
-
-        const extension =
-          file.name
-            .split(".")
-            .pop()
-            ?.toLowerCase() || "jpg";
-
-        const fileName =
-          `${crypto.randomUUID()}.${extension}`;
-
-        const storagePath =
-          `${product.id}/${fileName}`;
-
-        const { error: uploadError } =
-          await supabase.storage
-            .from("product-images")
-            .upload(
-              storagePath,
-              file,
-              {
-                cacheControl: "3600",
-                upsert: false,
-              }
-            );
-
-        if (uploadError) {
-          throw uploadError;
-        }
-
-        const { data: publicUrlData } =
-          supabase.storage
-            .from("product-images")
-            .getPublicUrl(storagePath);
-
-        const { error: imageError } =
-          await supabase
-            .from("product_images")
-            .insert({
-              product_id:
-                product.id,
-
-              image_url:
-                publicUrlData.publicUrl,
-
-              display_order:
-                index,
-            });
-
-        if (imageError) {
-          throw imageError;
-        }
+        throw new Error(
+          "Please enter a valid deposit amount."
+        );
       }
 
-      onMessage(
-        `${product.name} was added successfully.`
-      );
+      if (
+        Number.isNaN(dailyPayment) ||
+        dailyPayment <= 0
+      ) {
+        throw new Error(
+          "Please enter a valid daily payment."
+        );
+      }
 
-      setForm(initialForm);
-      setImages([]);
+      if (
+        Number.isNaN(paymentDays) ||
+        paymentDays <= 0
+      ) {
+        throw new Error(
+          "Please enter a valid number of payment days."
+        );
+      }
 
-      await onSaved();
-    } catch (error) {
-      onError(
-        error instanceof Error
-          ? error.message
-          : "Unable to add the product."
-      );
-    } finally {
-      setSaving(false);
+      calculatedTotal =
+        depositAmount +
+        dailyPayment * paymentDays;
     }
-  };
+
+    // ==================================================
+    // IMAGE VALIDATION
+    // ==================================================
+
+    const allowedImageTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ];
+
+    const maxFileSize =
+      5 * 1024 * 1024;
+
+    for (const file of images) {
+      if (
+        !allowedImageTypes.includes(
+          file.type
+        )
+      ) {
+        throw new Error(
+          `${file.name} is not supported. Use JPG, PNG or WebP.`
+        );
+      }
+
+      if (
+        file.size > maxFileSize
+      ) {
+        throw new Error(
+          `${file.name} is larger than 5 MB.`
+        );
+      }
+    }
+
+    // ==================================================
+    // DEBUG - SHOW EXACT DATA BEING SENT
+    // ==================================================
+
+    console.log(
+      "CATEGORY BEING SENT:",
+      JSON.stringify(category)
+    );
+
+    console.log(
+      "FORM CATEGORY BEFORE TRIM:",
+      JSON.stringify(form.category)
+    );
+
+    console.log(
+      "PRODUCT DATA:",
+      {
+        name,
+        category,
+        subcategory:
+          form.subcategory.trim() || null,
+        brand:
+          form.brand.trim() || null,
+        model:
+          form.model.trim() || null,
+        cash_price:
+          cashPrice,
+        stock_quantity:
+          stockQuantity,
+        availability:
+          form.availability,
+        featured:
+          form.featured,
+        lipa_mdogo_mdogo_available:
+          form.lipaAvailable,
+        deposit_amount:
+          depositAmount,
+        daily_payment:
+          dailyPayment,
+        payment_days:
+          paymentDays,
+        total_payable:
+          calculatedTotal,
+      }
+    );
+
+    // ==================================================
+    // CREATE PRODUCT
+    // ==================================================
+
+    const {
+      data: product,
+      error: productError,
+    } = await supabase
+      .from("products")
+      .insert({
+        name,
+
+        // IMPORTANT:
+        // Send the cleaned category.
+        category,
+
+        subcategory:
+          form.subcategory.trim() ||
+          null,
+
+        brand:
+          form.brand.trim() ||
+          null,
+
+        model:
+          form.model.trim() ||
+          null,
+
+        description:
+          form.description.trim() ||
+          null,
+
+        specifications:
+          form.specifications.trim() ||
+          null,
+
+        cash_price:
+          cashPrice,
+
+        stock_quantity:
+          stockQuantity,
+
+        availability:
+          form.availability,
+
+        featured:
+          form.featured,
+
+        lipa_mdogo_mdogo_available:
+          form.lipaAvailable,
+
+        deposit_amount:
+          form.lipaAvailable
+            ? depositAmount
+            : null,
+
+        daily_payment:
+          form.lipaAvailable
+            ? dailyPayment
+            : null,
+
+        payment_days:
+          form.lipaAvailable
+            ? paymentDays
+            : null,
+
+        total_payable:
+          form.lipaAvailable
+            ? calculatedTotal
+            : null,
+      })
+      .select("id,name")
+      .single();
+
+    // ==================================================
+    // PRODUCT DATABASE ERROR
+    // ==================================================
+
+    if (productError) {
+      console.error(
+        "SUPABASE PRODUCT ERROR:",
+        productError
+      );
+
+      console.error(
+        "CATEGORY THAT FAILED:",
+        JSON.stringify(category)
+      );
+
+      const errorParts = [
+        "Database error:",
+        productError.message,
+
+        productError.details
+          ? `Details: ${productError.details}`
+          : "",
+
+        productError.hint
+          ? `Hint: ${productError.hint}`
+          : "",
+
+        productError.code
+          ? `Code: ${productError.code}`
+          : "",
+      ];
+
+      throw new Error(
+        errorParts
+          .filter(Boolean)
+          .join(" ")
+      );
+    }
+
+    if (!product?.id) {
+      throw new Error(
+        "Product was not created because Supabase did not return a product ID."
+      );
+    }
+
+    console.log(
+      "PRODUCT CREATED SUCCESSFULLY:",
+      product
+    );
+
+    // ==================================================
+    // UPLOAD PRODUCT IMAGES
+    // ==================================================
+
+    for (
+      let index = 0;
+      index < images.length;
+      index += 1
+    ) {
+      const file =
+        images[index];
+
+      const extension =
+        file.name
+          .split(".")
+          .pop()
+          ?.toLowerCase() ||
+        "jpg";
+
+      const fileName =
+        `${crypto.randomUUID()}.${extension}`;
+
+      const storagePath =
+        `${product.id}/${fileName}`;
+
+      console.log(
+        `UPLOADING IMAGE ${index + 1}:`,
+        storagePath
+      );
+
+      const {
+        error: uploadError,
+      } =
+        await supabase.storage
+          .from(
+            "product-images"
+          )
+          .upload(
+            storagePath,
+            file,
+            {
+              cacheControl:
+                "3600",
+
+              upsert:
+                false,
+
+              contentType:
+                file.type,
+            }
+          );
+
+      if (uploadError) {
+        console.error(
+          "SUPABASE STORAGE ERROR:",
+          uploadError
+        );
+
+        throw new Error(
+          `Image upload failed: ${uploadError.message}`
+        );
+      }
+
+      // ==================================================
+      // GET IMAGE PUBLIC URL
+      // ==================================================
+
+      const {
+        data: publicUrlData,
+      } =
+        supabase.storage
+          .from(
+            "product-images"
+          )
+          .getPublicUrl(
+            storagePath
+          );
+
+      const imageUrl =
+        publicUrlData
+          ?.publicUrl;
+
+      if (!imageUrl) {
+        throw new Error(
+          "The image uploaded, but its public URL could not be generated."
+        );
+      }
+
+      // ==================================================
+      // SAVE IMAGE RECORD
+      // ==================================================
+
+      const {
+        error: imageError,
+      } =
+        await supabase
+          .from(
+            "product_images"
+          )
+          .insert({
+            product_id:
+              product.id,
+
+            image_url:
+              imageUrl,
+
+            display_order:
+              index,
+          });
+
+      if (imageError) {
+        console.error(
+          "PRODUCT IMAGE DATABASE ERROR:",
+          imageError
+        );
+
+        const imageErrorParts = [
+          "Image record error:",
+          imageError.message,
+
+          imageError.details
+            ? `Details: ${imageError.details}`
+            : "",
+
+          imageError.hint
+            ? `Hint: ${imageError.hint}`
+            : "",
+
+          imageError.code
+            ? `Code: ${imageError.code}`
+            : "",
+        ];
+
+        throw new Error(
+          imageErrorParts
+            .filter(Boolean)
+            .join(" ")
+        );
+      }
+    }
+
+    // ==================================================
+    // SUCCESS
+    // ==================================================
+
+    onError("");
+
+    onMessage(
+      `${product.name} was added successfully.`
+    );
+
+    setForm(
+      initialForm
+    );
+
+    setImages([]);
+
+    await onSaved();
+
+  } catch (
+    error: unknown
+  ) {
+    console.error(
+      "ADD PRODUCT ERROR:",
+      error
+    );
+
+    let errorMessage =
+      "Unable to add the product.";
+
+    if (
+      error instanceof Error
+    ) {
+      errorMessage =
+        error.message;
+
+    } else if (
+      typeof error ===
+        "object" &&
+      error !== null
+    ) {
+      const possibleError =
+        error as {
+          message?: string;
+          details?: string;
+          hint?: string;
+          code?: string;
+        };
+
+      if (
+        possibleError.message
+      ) {
+        errorMessage =
+          possibleError.message;
+      }
+
+      if (
+        possibleError.details
+      ) {
+        errorMessage +=
+          ` Details: ${possibleError.details}`;
+      }
+
+      if (
+        possibleError.hint
+      ) {
+        errorMessage +=
+          ` Hint: ${possibleError.hint}`;
+      }
+
+      if (
+        possibleError.code
+      ) {
+        errorMessage +=
+          ` Code: ${possibleError.code}`;
+      }
+
+    } else if (
+      typeof error ===
+        "string"
+    ) {
+      errorMessage =
+        error;
+    }
+
+    onError(
+      errorMessage
+    );
+
+  } finally {
+    setSaving(false);
+  }
+};
 
   return (
     <form
       onSubmit={handleSubmit}
       className="space-y-6"
     >
-
-      {/* PRODUCT DETAILS */}
+      {/* PRODUCT INFORMATION */}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
         <h2 className="text-xl font-black text-[#0b2947]">
           Product Information
         </h2>
 
         <div className="mt-5 grid gap-5 md:grid-cols-2">
-
           <label className="text-sm font-bold">
             Product Name
 
@@ -246,12 +622,11 @@ export default function AddProductForm({
               onChange={(event) =>
                 setForm({
                   ...form,
-                  name:
-                    event.target.value,
+                  name: event.target.value,
                 })
               }
               className={inputClass}
-              placeholder="e.g. Samsung 55-inch Smart TV"
+              placeholder="e.g. 700W High-Efficiency Monocrystalline Solar Panel"
             />
           </label>
 
@@ -263,8 +638,7 @@ export default function AddProductForm({
               onChange={(event) =>
                 setForm({
                   ...form,
-                  category:
-                    event.target.value,
+                  category: event.target.value,
                 })
               }
               className={inputClass}
@@ -295,12 +669,11 @@ export default function AddProductForm({
               onChange={(event) =>
                 setForm({
                   ...form,
-                  subcategory:
-                    event.target.value,
+                  subcategory: event.target.value,
                 })
               }
               className={inputClass}
-              placeholder="e.g. Televisions"
+              placeholder="e.g. Solar Panels"
             />
           </label>
 
@@ -312,12 +685,11 @@ export default function AddProductForm({
               onChange={(event) =>
                 setForm({
                   ...form,
-                  brand:
-                    event.target.value,
+                  brand: event.target.value,
                 })
               }
               className={inputClass}
-              placeholder="e.g. Samsung"
+              placeholder="e.g. Smart Tech"
             />
           </label>
 
@@ -329,11 +701,11 @@ export default function AddProductForm({
               onChange={(event) =>
                 setForm({
                   ...form,
-                  model:
-                    event.target.value,
+                  model: event.target.value,
                 })
               }
               className={inputClass}
+              placeholder="e.g. SP-700W-MONO"
             />
           </label>
 
@@ -343,16 +715,17 @@ export default function AddProductForm({
             <input
               required
               min="0"
+              step="1"
               type="number"
               value={form.cashPrice}
               onChange={(event) =>
                 setForm({
                   ...form,
-                  cashPrice:
-                    event.target.value,
+                  cashPrice: event.target.value,
                 })
               }
               className={inputClass}
+              placeholder="10000"
             />
           </label>
 
@@ -362,13 +735,13 @@ export default function AddProductForm({
             <input
               required
               min="0"
+              step="1"
               type="number"
               value={form.stockQuantity}
               onChange={(event) =>
                 setForm({
                   ...form,
-                  stockQuantity:
-                    event.target.value,
+                  stockQuantity: event.target.value,
                 })
               }
               className={inputClass}
@@ -383,8 +756,7 @@ export default function AddProductForm({
               onChange={(event) =>
                 setForm({
                   ...form,
-                  availability:
-                    event.target.value,
+                  availability: event.target.value,
                 })
               }
               className={inputClass}
@@ -402,22 +774,21 @@ export default function AddProductForm({
               </option>
             </select>
           </label>
-
         </div>
 
-        <div className="mt-5 grid gap-5 md:grid-cols-2">
+        {/* DESCRIPTION / SPECIFICATIONS */}
 
+        <div className="mt-5 grid gap-5 md:grid-cols-2">
           <label className="text-sm font-bold">
             Product Description
 
             <textarea
-              rows={5}
+              rows={7}
               value={form.description}
               onChange={(event) =>
                 setForm({
                   ...form,
-                  description:
-                    event.target.value,
+                  description: event.target.value,
                 })
               }
               className={inputClass}
@@ -429,60 +800,52 @@ export default function AddProductForm({
             Specifications
 
             <textarea
-              rows={5}
+              rows={7}
               value={form.specifications}
               onChange={(event) =>
                 setForm({
                   ...form,
-                  specifications:
-                    event.target.value,
+                  specifications: event.target.value,
                 })
               }
               className={inputClass}
-              placeholder="Capacity, size, colour, warranty, power..."
+              placeholder={
+                `Power Output: 700W
+Cell Type: Monocrystalline
+Suitable for: Off-grid & Hybrid Systems`
+              }
             />
           </label>
-
         </div>
 
         <label className="mt-5 flex items-center gap-3 font-bold">
-
           <input
             type="checkbox"
             checked={form.featured}
             onChange={(event) =>
               setForm({
                 ...form,
-                featured:
-                  event.target.checked,
+                featured: event.target.checked,
               })
             }
             className="h-5 w-5"
           />
 
           Feature this product on the website
-
         </label>
-
       </section>
-
 
       {/* LIPA MDOGO MDOGO */}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
         <label className="flex items-center gap-3">
-
           <input
             type="checkbox"
-            checked={
-              form.lipaAvailable
-            }
+            checked={form.lipaAvailable}
             onChange={(event) =>
               setForm({
                 ...form,
-                lipaAvailable:
-                  event.target.checked,
+                lipaAvailable: event.target.checked,
               })
             }
             className="h-5 w-5"
@@ -497,57 +860,49 @@ export default function AddProductForm({
               Deposit + Daily Payments
             </span>
           </span>
-
         </label>
 
-
         {form.lipaAvailable && (
-
           <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-
             <label className="text-sm font-bold">
               Deposit (KSh)
 
               <input
                 required
                 min="0"
+                step="1"
                 type="number"
-                value={
-                  form.depositAmount
-                }
+                value={form.depositAmount}
                 onChange={(event) =>
                   setForm({
                     ...form,
-                    depositAmount:
-                      event.target.value,
+                    depositAmount: event.target.value,
                   })
                 }
                 className={inputClass}
+                placeholder="2500"
               />
             </label>
-
 
             <label className="text-sm font-bold">
               Daily Payment (KSh)
 
               <input
                 required
-                min="0"
+                min="1"
+                step="1"
                 type="number"
-                value={
-                  form.dailyPayment
-                }
+                value={form.dailyPayment}
                 onChange={(event) =>
                   setForm({
                     ...form,
-                    dailyPayment:
-                      event.target.value,
+                    dailyPayment: event.target.value,
                   })
                 }
                 className={inputClass}
+                placeholder="50"
               />
             </label>
-
 
             <label className="text-sm font-bold">
               Number of Days
@@ -555,53 +910,39 @@ export default function AddProductForm({
               <input
                 required
                 min="1"
+                step="1"
                 type="number"
-                value={
-                  form.paymentDays
-                }
+                value={form.paymentDays}
                 onChange={(event) =>
                   setForm({
                     ...form,
-                    paymentDays:
-                      event.target.value,
+                    paymentDays: event.target.value,
                   })
                 }
                 className={inputClass}
+                placeholder="150"
               />
             </label>
 
-
             <div>
-
               <p className="text-sm font-bold">
                 Total Payable
               </p>
 
               <div className="mt-2 rounded-xl bg-emerald-50 px-4 py-3 font-black text-emerald-800">
-
                 KSh{" "}
-
                 {new Intl.NumberFormat(
                   "en-KE"
-                ).format(
-                  totalPayable
-                )}
-
+                ).format(totalPayable)}
               </div>
-
             </div>
-
           </div>
-
         )}
-
       </section>
 
-
-      {/* PRODUCT IMAGES */}
+      {/* PRODUCT PHOTOS */}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
         <h2 className="text-xl font-black text-[#0b2947]">
           Product Photos
         </h2>
@@ -618,43 +959,54 @@ export default function AddProductForm({
           onChange={(event) =>
             setImages(
               Array.from(
-                event.target.files ??
-                  []
+                event.target.files ?? []
               )
             )
           }
-          className="mt-5 block w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5"
+                    className="mt-5 block w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5"
         />
 
         {images.length > 0 && (
+          <div className="mt-4">
+            <p className="font-bold text-[#0798ef]">
+              {images.length} image
+              {images.length !== 1 ? "s" : ""} selected
+            </p>
 
-          <p className="mt-3 font-bold text-[#0798ef]">
-
-            {images.length} image
-            {images.length !== 1
-              ? "s"
-              : ""}{" "}
-            selected
-
-          </p>
-
+            <div className="mt-3 space-y-2">
+              {images.map((file, index) => (
+                <div
+                  key={`${file.name}-${index}`}
+                  className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600"
+                >
+                  {index === 0 ? "Primary: " : ""}
+                  {file.name}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
-
       </section>
 
+      {/* SUBMIT BUTTON */}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="rounded-xl bg-[#0798ef] px-7 py-3.5 font-black text-white transition duration-200 hover:-translate-y-0.5 hover:bg-[#087bd0] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
-      >
+      <div className="flex items-center gap-4">
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-xl bg-[#0798ef] px-7 py-3.5 font-black text-white transition duration-200 hover:-translate-y-0.5 hover:bg-[#087bd0] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {saving
+            ? "Saving Product..."
+            : "Add Product"}
+        </button>
 
-        {saving
-          ? "Saving Product..."
-          : "Add Product"}
-
-      </button>
-
+        {saving && (
+          <span className="text-sm font-medium text-slate-500">
+            Please wait while the product is being saved...
+          </span>
+        )}
+      </div>
     </form>
   );
 }

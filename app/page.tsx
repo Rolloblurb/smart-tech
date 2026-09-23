@@ -82,6 +82,27 @@ export default function Home() {
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState("");
   const [cookieChoice, setCookieChoice] = useState<CookieChoice | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All Products");
+
+  const filteredProducts = products.filter((product) => {
+    const query = searchQuery.trim().toLowerCase();
+    const matchesCategory =
+      selectedCategory === "All Products" || product.category === selectedCategory;
+    const matchesSearch =
+      !query ||
+      product.name.toLowerCase().includes(query) ||
+      product.category.toLowerCase().includes(query) ||
+      (product.description ?? "").toLowerCase().includes(query);
+    return matchesCategory && matchesSearch;
+  });
+
+  const showCategory = (category: string) => {
+    setSelectedCategory(category);
+    window.setTimeout(() => {
+      document.getElementById("products")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  };
 
 
   useEffect(() => {
@@ -197,8 +218,18 @@ export default function Home() {
         <div className="mx-auto flex max-w-7xl items-center gap-5 px-4 py-4 sm:px-6">
           <Image src="/images/logo/smart-tech-logo.jpg" alt="Smart Tech" width={220} height={110} priority className="h-16 w-auto object-contain" />
           <div className="hidden flex-1 overflow-hidden rounded-lg border border-slate-300 transition duration-200 focus-within:border-[#0798ef] focus-within:ring-4 focus-within:ring-sky-100 md:flex">
-            <input className="min-w-0 flex-1 px-4 py-3 text-sm outline-none" placeholder="Search for products, brands or categories..." />
-            <button type="button" className="bg-[#0798ef] px-6 text-white transition duration-200 hover:bg-[#087bd0] hover:shadow-[0_0_22px_rgba(7,152,239,.45)] active:scale-95">🔍</button>
+            <input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+              className="min-w-0 flex-1 px-4 py-3 text-sm outline-none"
+              placeholder="Search products or categories..."
+            />
+            <button type="button" onClick={() => document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })} className="bg-[#0798ef] px-6 text-white transition duration-200 hover:bg-[#087bd0] hover:shadow-[0_0_22px_rgba(7,152,239,.45)] active:scale-95" aria-label="Search catalogue">🔍</button>
           </div>
           <div className="ml-auto hidden gap-6 text-sm font-bold lg:flex"><span>👤 Account</span><span>🛒 Cart (0)</span></div>
           <button type="button" onClick={() => setMenuOpen(!menuOpen)} className="ml-auto rounded-lg border px-4 py-3 transition duration-200 hover:border-[#0798ef] hover:bg-sky-50 active:scale-95 md:hidden">☰</button>
@@ -207,7 +238,7 @@ export default function Home() {
           <div className="mx-auto hidden max-w-7xl items-center justify-between px-4 text-sm font-bold md:flex sm:px-6">
             <a className="bg-[#0798ef] px-6 py-4 text-white transition duration-200 hover:bg-[#087bd0]" href="#home">Home</a>
             {["Home Appliances", "Solar & Backup Power", "Smart Electronics & Gadgets", "Computing & Office"].map((item) => (
-              <a key={item} href="#categories" className="relative py-4 transition duration-200 hover:text-[#0798ef]">{item}</a>
+              <button key={item} type="button" onClick={() => showCategory(item)} className={`relative py-4 transition duration-200 hover:text-[#0798ef] ${selectedCategory === item ? "text-[#0798ef]" : ""}`}>{item}</button>
             ))}
             <a href="#lipa" className="relative py-4 transition duration-200 hover:text-[#0798ef]">Lipa Mdogo Mdogo</a>
             <a href="#products" className="relative py-4 transition duration-200 hover:text-[#0798ef]">Deals</a>
@@ -342,9 +373,11 @@ export default function Home() {
 
   <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
     {categories.map((c) => (
-      <article
+      <button
         key={c.title}
-        className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-2 hover:border-sky-300 hover:shadow-[0_18px_45px_rgba(8,73,121,.16)]"
+        type="button"
+        onClick={() => showCategory(c.title)}
+        className="group overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition duration-300 hover:-translate-y-2 hover:border-sky-300 hover:shadow-[0_18px_45px_rgba(8,73,121,.16)]"
       >
         <div className="relative h-52 overflow-hidden">
           <Image
@@ -365,7 +398,7 @@ export default function Home() {
             {c.text}
           </p>
         </div>
-      </article>
+      </button>
     ))}
 
     <article
@@ -403,6 +436,29 @@ export default function Home() {
             Real products will appear here as they are added to Smart Tech. Each product will have its own photos,
             specifications, cash price and Lipa Mdogo Mdogo terms where available.
           </p>
+
+          <div className="mt-7 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap gap-2">
+              {["All Products", ...categories.map((category) => category.title)].map((category) => (
+                <button key={category} type="button" onClick={() => setSelectedCategory(category)} className={`rounded-full px-4 py-2 text-sm font-black transition ${selectedCategory === category ? "bg-[#0798ef] text-white shadow" : "border border-slate-200 bg-white text-slate-600 hover:border-sky-300 hover:text-[#0798ef]"}`}>
+                  {category}
+                </button>
+              ))}
+            </div>
+            {(searchQuery || selectedCategory !== "All Products") && (
+              <button type="button" onClick={() => { setSearchQuery(""); setSelectedCategory("All Products"); }} className="shrink-0 text-sm font-black text-[#0798ef] hover:underline">
+                Clear filters
+              </button>
+            )}
+          </div>
+
+          {!productsLoading && !productsError && products.length > 0 && (
+            <p className="mt-4 text-sm font-semibold text-slate-500">
+              Showing {filteredProducts.length} of {products.length} products
+              {selectedCategory !== "All Products" ? ` in ${selectedCategory}` : ""}
+              {searchQuery.trim() ? ` matching "${searchQuery.trim()}"` : ""}.
+            </p>
+          )}
           {productsLoading ? (
             <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-12 text-center">
               <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-[#0798ef]" />
@@ -418,9 +474,18 @@ export default function Home() {
               <h3 className="mt-4 text-2xl font-black">New products are coming soon</h3>
               <p className="mt-2 text-slate-500">Check back shortly for the latest Smart Tech catalogue.</p>
             </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="mt-8 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+              <div className="text-5xl">🔎</div>
+              <h3 className="mt-4 text-2xl font-black">No products found</h3>
+              <p className="mt-2 text-slate-500">Try another search or choose a different product category.</p>
+              <button type="button" onClick={() => { setSearchQuery(""); setSelectedCategory("All Products"); }} className="mt-5 rounded-xl bg-[#0798ef] px-5 py-3 font-black text-white">
+                Show All Products
+              </button>
+            </div>
           ) : (
             <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {products.map((product) => {
+              {filteredProducts.map((product) => {
                 const image = product.product_images?.[0]?.image_url;
                 const whatsappText = encodeURIComponent(
                   `Hello Smart Tech, I am interested in ${product.name}. Please share more information about the cash and Lipa Mdogo Mdogo options.`
