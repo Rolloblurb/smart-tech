@@ -291,9 +291,68 @@ export default function Home() {
             <a href="#about" className="relative py-4 transition duration-200 hover:text-[#0798ef]">About Us</a>
             <a href="#contact" className="relative py-4 transition duration-200 hover:text-[#0798ef]">Contact</a>
           </div>
-          {menuOpen && <div className="grid gap-2 px-5 py-4 font-bold md:hidden">
-            {["Home","Home Appliances","Solar & Backup Power","Smart Electronics & Gadgets","Computing & Office","Lipa Mdogo Mdogo","Deals","About Us","Contact"].map(x => <a key={x} href={x==="Home"?"#home":"#categories"} onClick={()=>setMenuOpen(false)} className="py-2">{x}</a>)}
-          </div>}
+         {menuOpen && (
+  <div className="grid gap-2 px-5 py-4 font-bold md:hidden">
+    <a
+      href="#home"
+      onClick={() => setMenuOpen(false)}
+      className="py-2"
+    >
+      Home
+    </a>
+
+    {[
+      "Home Appliances",
+      "Solar & Backup Power",
+      "Smart Electronics & Gadgets",
+      "Computing & Office",
+    ].map((category) => (
+      <button
+        key={category}
+        type="button"
+        onClick={() => {
+          setMenuOpen(false);
+          showCategory(category);
+        }}
+        className="py-2 text-left"
+      >
+        {category}
+      </button>
+    ))}
+
+    <a
+      href="#lipa"
+      onClick={() => setMenuOpen(false)}
+      className="py-2"
+    >
+      Lipa Mdogo Mdogo
+    </a>
+
+    <a
+      href="#products"
+      onClick={() => setMenuOpen(false)}
+      className="py-2"
+    >
+      Deals
+    </a>
+
+    <a
+      href="#about"
+      onClick={() => setMenuOpen(false)}
+      className="py-2"
+    >
+      About Us
+    </a>
+
+    <a
+      href="#contact"
+      onClick={() => setMenuOpen(false)}
+      className="py-2"
+    >
+      Contact
+    </a>
+  </div>
+)}
         </nav>
       </header>
 
