@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { FaFacebookF, FaTiktok, FaWhatsapp } from "react-icons/fa";
+import { FaFacebookF, FaWhatsapp } from "react-icons/fa";
 import { MdEmail, MdLocationOn } from "react-icons/md";
 import { supabase } from "@/lib/supabase";
 
@@ -85,6 +85,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Products");
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
+  const [descriptionProduct, setDescriptionProduct] = useState<StoreProduct | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [imageZoom, setImageZoom] = useState(1);
 
@@ -614,7 +615,13 @@ export default function Home() {
                     <div className="p-5">
                       <h3 className="text-lg font-black text-[#0b2947]">{product.name}</h3>
                       {product.description && (
-                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-500">{product.description}</p>
+                        <button
+                          type="button"
+                          onClick={() => setDescriptionProduct(product)}
+                          className="mt-3 w-full rounded-xl border-2 border-[#0798ef] px-4 py-2.5 text-sm font-black text-[#0798ef] transition hover:bg-[#0798ef] hover:text-white"
+                        >
+                          View Product Description
+                        </button>
                       )}
 
                       <p className="mt-4 text-xl font-black text-[#0798ef]">
@@ -829,13 +836,51 @@ export default function Home() {
             <div className="mt-6 flex flex-wrap gap-3">
               <a href="https://wa.me/254785709176?text=Hello%20Smart%20Tech.%20I%20would%20like%20to%20make%20an%20enquiry." target="_blank" rel="noopener noreferrer" aria-label="Contact Smart Tech on WhatsApp" title="WhatsApp" className="grid h-12 w-12 place-items-center rounded-full border border-black/20 bg-white text-xl text-black transition duration-200 hover:-translate-y-1 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(0,0,0,.25)] active:scale-95"><FaWhatsapp /></a>
               <a href="https://www.facebook.com/share/1L7s2XPwM5/" target="_blank" rel="noopener noreferrer" aria-label="Visit Smart Tech on Facebook" title="Facebook" className="grid h-12 w-12 place-items-center rounded-full border border-black/20 bg-white text-xl text-black transition duration-200 hover:-translate-y-1 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(0,0,0,.25)] active:scale-95"><FaFacebookF /></a>
-              <a href="https://www.tiktok.com/@smart.tech.applia0" target="_blank" rel="noopener noreferrer" aria-label="Visit Smart Tech on TikTok" title="TikTok" className="grid h-12 w-12 place-items-center rounded-full border border-black/20 bg-white text-xl text-black transition duration-200 hover:-translate-y-1 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(0,0,0,.25)] active:scale-95"><FaTiktok /></a>
               <a href="mailto:smarttechbetterliving@gmail.com" aria-label="Email Smart Tech" title="Email" className="grid h-12 w-12 place-items-center rounded-full border border-black/20 bg-white text-xl text-black transition duration-200 hover:-translate-y-1 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(0,0,0,.25)] active:scale-95"><MdEmail /></a>
             </div>
           </div>
         </div>
         <div className="border-t border-white/15 px-4 py-5 text-center text-xs text-white/60">© 2026 SMART TECH. All rights reserved. • Smart Products. A Brighter Tomorrow.</div>
       </footer>
+
+      {descriptionProduct && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${descriptionProduct.name} product description`}
+          onClick={() => setDescriptionProduct(null)}
+        >
+          <div
+            className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 text-slate-900 shadow-2xl sm:p-8"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setDescriptionProduct(null)}
+              className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-slate-100 text-xl font-black text-slate-700 transition hover:bg-slate-200"
+              aria-label="Close product description"
+            >
+              ✕
+            </button>
+            <h2 className="pr-14 text-2xl font-black text-[#0b2947] sm:text-3xl">
+              {descriptionProduct.name}
+            </h2>
+            <div className="mt-6 rounded-2xl bg-slate-50 p-5 sm:p-6">
+              <p className="whitespace-pre-wrap break-words text-base leading-8 text-slate-700">
+                {descriptionProduct.description}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDescriptionProduct(null)}
+              className="mt-6 w-full rounded-xl bg-[#0798ef] px-5 py-3.5 font-black text-white transition hover:bg-[#087bd0]"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {selectedProduct && selectedProduct.product_images.length > 0 && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label={`${selectedProduct.name} image gallery`} onClick={closeProductGallery}>
