@@ -6,6 +6,8 @@ import { FaFacebookF, FaWhatsapp } from "react-icons/fa";
 import { MdEmail, MdLocationOn } from "react-icons/md";
 import { supabase } from "@/lib/supabase";
 
+const PHONE_NUMBER = "+254785709176";
+
 const categories = [
   { title: "Home Appliances", image: "/images/categories/home-appliances.jpg", text: "Smart appliances for easier everyday living." },
   { title: "Solar & Backup Power", image: "/images/categories/solar-systems.jpg", text: "Reliable solar, inverter and backup power solutions." },
@@ -56,6 +58,7 @@ type StoreProduct = {
   name: string;
   category: string;
   description: string | null;
+  specifications: string | null;
   cash_price: number;
   availability: string;
   stock_quantity: number;
@@ -97,7 +100,8 @@ export default function Home() {
       !query ||
       product.name.toLowerCase().includes(query) ||
       product.category.toLowerCase().includes(query) ||
-      (product.description ?? "").toLowerCase().includes(query);
+      (product.description ?? "").toLowerCase().includes(query) ||
+      (product.specifications ?? "").toLowerCase().includes(query);
     return matchesCategory && matchesSearch;
   });
 
@@ -169,6 +173,7 @@ export default function Home() {
           name,
           category,
           description,
+          specifications,
           cash_price,
           availability,
           stock_quantity,
@@ -614,7 +619,7 @@ export default function Home() {
 
                     <div className="p-5">
                       <h3 className="text-lg font-black text-[#0b2947]">{product.name}</h3>
-                      {product.description && (
+                      {(product.description || product.specifications) && (
                         <button
                           type="button"
                           onClick={() => setDescriptionProduct(product)}
@@ -643,15 +648,23 @@ export default function Home() {
                         </div>
                       )}
 
-                      <a
-                        href={`https://wa.me/254785709176?text=${whatsappText}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-3 font-black text-white transition hover:-translate-y-0.5 hover:shadow-lg active:scale-[.98]"
-                      >
-                        <FaWhatsapp />
-                        Enquire on WhatsApp
-                      </a>
+                      <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                        <a
+                          href={`tel:${PHONE_NUMBER}`}
+                          className="flex items-center justify-center gap-2 rounded-xl bg-[#0798ef] px-4 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-[#087bd0] hover:shadow-lg active:scale-[.98]"
+                        >
+                          📞 Call Us
+                        </a>
+                        <a
+                          href={`https://wa.me/254785709176?text=${whatsappText}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-3 font-black text-white transition hover:-translate-y-0.5 hover:shadow-lg active:scale-[.98]"
+                        >
+                          <FaWhatsapp />
+                          Enquire on WhatsApp
+                        </a>
+                      </div>
                     </div>
                   </article>
                 );
@@ -831,9 +844,11 @@ export default function Home() {
             <div className="mt-4 space-y-3 text-sm text-white/75">
               <p className="flex items-start gap-2"><MdLocationOn className="mt-0.5 shrink-0 text-lg text-black" /><span>Gaberone Plaza, 4th Floor, Shop A13, Nairobi, Kenya</span></p>
               <a href="mailto:smarttechbetterliving@gmail.com" className="flex items-center gap-2 transition hover:text-white"><MdEmail className="inline text-lg text-black" /> <span>smarttechbetterliving@gmail.com</span></a>
-              <a href="https://wa.me/254785709176?text=Hello%20Smart%20Tech.%20I%20would%20like%20to%20make%20an%20enquiry." target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 transition hover:text-white"><FaWhatsapp className="inline text-lg text-black" /> <span>+254 785 709 176</span></a>
+              <a href={`tel:${PHONE_NUMBER}`} className="flex items-center gap-2 transition hover:text-white"><span className="text-lg text-black">📞</span><span>+254 785 709 176</span></a>
+              <a href="https://wa.me/254785709176?text=Hello%20Smart%20Tech.%20I%20would%20like%20to%20make%20an%20enquiry." target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 transition hover:text-white"><FaWhatsapp className="inline text-lg text-black" /> <span>WhatsApp Us</span></a>
             </div>
             <div className="mt-6 flex flex-wrap gap-3">
+              <a href={`tel:${PHONE_NUMBER}`} aria-label="Call Smart Tech" title="Call Smart Tech" className="grid h-12 w-12 place-items-center rounded-full border border-black/20 bg-white text-xl text-black transition duration-200 hover:-translate-y-1 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(0,0,0,.25)] active:scale-95">📞</a>
               <a href="https://wa.me/254785709176?text=Hello%20Smart%20Tech.%20I%20would%20like%20to%20make%20an%20enquiry." target="_blank" rel="noopener noreferrer" aria-label="Contact Smart Tech on WhatsApp" title="WhatsApp" className="grid h-12 w-12 place-items-center rounded-full border border-black/20 bg-white text-xl text-black transition duration-200 hover:-translate-y-1 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(0,0,0,.25)] active:scale-95"><FaWhatsapp /></a>
               <a href="https://www.facebook.com/share/1L7s2XPwM5/" target="_blank" rel="noopener noreferrer" aria-label="Visit Smart Tech on Facebook" title="Facebook" className="grid h-12 w-12 place-items-center rounded-full border border-black/20 bg-white text-xl text-black transition duration-200 hover:-translate-y-1 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(0,0,0,.25)] active:scale-95"><FaFacebookF /></a>
               <a href="mailto:smarttechbetterliving@gmail.com" aria-label="Email Smart Tech" title="Email" className="grid h-12 w-12 place-items-center rounded-full border border-black/20 bg-white text-xl text-black transition duration-200 hover:-translate-y-1 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(0,0,0,.25)] active:scale-95"><MdEmail /></a>
@@ -866,10 +881,28 @@ export default function Home() {
             <h2 className="pr-14 text-2xl font-black text-[#0b2947] sm:text-3xl">
               {descriptionProduct.name}
             </h2>
-            <div className="mt-6 rounded-2xl bg-slate-50 p-5 sm:p-6">
-              <p className="whitespace-pre-wrap break-words text-base leading-8 text-slate-700">
-                {descriptionProduct.description}
-              </p>
+            <div className="mt-6 space-y-5">
+              {descriptionProduct.description && (
+                <div className="rounded-2xl bg-slate-50 p-5 sm:p-6">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-[#0798ef]">
+                    Product Description
+                  </p>
+                  <p className="mt-3 whitespace-pre-wrap break-words text-base leading-8 text-slate-700">
+                    {descriptionProduct.description}
+                  </p>
+                </div>
+              )}
+
+              {descriptionProduct.specifications && (
+                <div className="rounded-2xl border border-sky-100 bg-sky-50/60 p-5 sm:p-6">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-[#0798ef]">
+                    Specifications
+                  </p>
+                  <p className="mt-3 whitespace-pre-wrap break-words text-base leading-8 text-slate-700">
+                    {descriptionProduct.specifications}
+                  </p>
+                </div>
+              )}
             </div>
             <button
               type="button"
