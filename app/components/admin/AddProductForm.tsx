@@ -9,6 +9,18 @@ type Props = {
   onError: (message: string) => void;
 };
 
+type ProductVariantForm = {
+  variantName: string; cashPrice: string; stockQuantity: string;
+  availability: string; lipaAvailable: boolean; depositAmount: string;
+  dailyPayment: string; paymentDays: string;
+};
+
+const createEmptyVariant = (): ProductVariantForm => ({
+  variantName: "", cashPrice: "", stockQuantity: "1",
+  availability: "Available", lipaAvailable: false,
+  depositAmount: "", dailyPayment: "", paymentDays: "",
+});
+
 const initialForm = {
   name: "",
   category: "Home Appliances",
@@ -36,6 +48,14 @@ export default function AddProductForm({
   const [form, setForm] = useState(initialForm);
   const [images, setImages] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
+  const [useVariants, setUseVariants] = useState(false);
+  const [variants, setVariants] = useState<ProductVariantForm[]>([createEmptyVariant()]);
+
+  const updateVariant = (index: number, updates: Partial<ProductVariantForm>) =>
+    setVariants(current => current.map((v, i) => i === index ? { ...v, ...updates } : v));
+  const addVariant = () => setVariants(current => [...current, createEmptyVariant()]);
+  const removeVariant = (index: number) =>
+    setVariants(current => current.length === 1 ? current : current.filter((_, i) => i !== index));
 
   const inputClass =
     "mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-[#0798ef] focus:ring-4 focus:ring-sky-100";
@@ -83,9 +103,11 @@ export default function AddProductForm({
     }
 
     if (
-      !form.cashPrice ||
-      Number.isNaN(cashPrice) ||
-      cashPrice < 0
+      !useVariants && (
+        !form.cashPrice ||
+        Number.isNaN(cashPrice) ||
+        cashPrice < 0
+      )
     ) {
       throw new Error(
         "Please enter a valid cash price."
@@ -93,9 +115,11 @@ export default function AddProductForm({
     }
 
     if (
-      form.stockQuantity === "" ||
-      Number.isNaN(stockQuantity) ||
-      stockQuantity < 0
+      !useVariants && (
+        form.stockQuantity === "" ||
+        Number.isNaN(stockQuantity) ||
+        stockQuantity < 0
+      )
     ) {
       throw new Error(
         "Please enter a valid stock quantity."
@@ -111,7 +135,7 @@ export default function AddProductForm({
     let paymentDays: number | null = null;
     let calculatedTotal: number | null = null;
 
-    if (form.lipaAvailable) {
+    if (!useVariants && form.lipaAvailable) {
       if (
         !form.depositAmount ||
         !form.dailyPayment ||
@@ -161,6 +185,26 @@ export default function AddProductForm({
       calculatedTotal =
         depositAmount +
         dailyPayment * paymentDays;
+    }
+
+    // ==================================================
+    // PRODUCT VARIANTS
+    // ==================================================
+    if (useVariants) {
+      variants.forEach((variant, index) => {
+        const label = `Variant ${index + 1}`;
+        if (!variant.variantName.trim()) throw new Error(`${label}: enter the size or option name.`);
+        if (!variant.cashPrice || Number.isNaN(Number(variant.cashPrice)) || Number(variant.cashPrice) < 0)
+          throw new Error(`${label}: enter a valid cash price.`);
+        if (variant.stockQuantity === "" || Number.isNaN(Number(variant.stockQuantity)) || Number(variant.stockQuantity) < 0)
+          throw new Error(`${label}: enter a valid stock quantity.`);
+        if (variant.lipaAvailable) {
+          if (!variant.depositAmount || !variant.dailyPayment || !variant.paymentDays)
+            throw new Error(`${label}: complete all Lipa Mdogo Mdogo fields.`);
+          if (Number(variant.depositAmount) < 0 || Number(variant.dailyPayment) <= 0 || Number(variant.paymentDays) <= 0)
+            throw new Error(`${label}: enter valid Lipa Mdogo Mdogo values.`);
+        }
+      });
     }
 
     // ==================================================
@@ -230,7 +274,7 @@ export default function AddProductForm({
         featured:
           form.featured,
         lipa_mdogo_mdogo_available:
-          form.lipaAvailable,
+          useVariants ? variants.some(variant => variant.lipaAvailable) : form.lipaAvailable,
         deposit_amount:
           depositAmount,
         daily_payment:
@@ -279,13 +323,17 @@ export default function AddProductForm({
           null,
 
         cash_price:
-          cashPrice,
+          useVariants ? Number(variants[0].cashPrice) : cashPrice,
 
         stock_quantity:
-          stockQuantity,
+          useVariants
+            ? variants.reduce((sum, variant) => sum + Number(variant.stockQuantity), 0)
+            : stockQuantity,
 
         availability:
-          form.availability,
+          useVariants
+            ? (variants.find(variant => variant.availability === "Available")?.availability ?? variants[0].availability)
+            : form.availability,
 
         featured:
           form.featured,
@@ -294,24 +342,16 @@ export default function AddProductForm({
           form.lipaAvailable,
 
         deposit_amount:
-          form.lipaAvailable
-            ? depositAmount
-            : null,
+          useVariants ? null : form.lipaAvailable ? depositAmount : null,
 
         daily_payment:
-          form.lipaAvailable
-            ? dailyPayment
-            : null,
+          useVariants ? null : form.lipaAvailable ? dailyPayment : null,
 
         payment_days:
-          form.lipaAvailable
-            ? paymentDays
-            : null,
+          useVariants ? null : form.lipaAvailable ? paymentDays : null,
 
         total_payable:
-          form.lipaAvailable
-            ? calculatedTotal
-            : null,
+          useVariants ? null : form.lipaAvailable ? calculatedTotal : null,
       })
       .select("id,name")
       .single();
@@ -365,6 +405,31 @@ export default function AddProductForm({
       "PRODUCT CREATED SUCCESSFULLY:",
       product
     );
+
+    // ==================================================
+    // SAVE PRODUCT VARIANTS
+    // ==================================================
+    if (useVariants) {
+      const variantRows = variants.map((variant, index) => {
+        const deposit = variant.lipaAvailable ? Number(variant.depositAmount) : null;
+        const daily = variant.lipaAvailable ? Number(variant.dailyPayment) : null;
+        const days = variant.lipaAvailable ? Number(variant.paymentDays) : null;
+        return {
+          product_id: product.id,
+          variant_name: variant.variantName.trim(),
+          cash_price: Number(variant.cashPrice),
+          stock_quantity: Number(variant.stockQuantity),
+          availability: variant.availability,
+          lipa_mdogo_mdogo_available: variant.lipaAvailable,
+          deposit_amount: deposit, daily_payment: daily, payment_days: days,
+          total_payable: variant.lipaAvailable && deposit !== null && daily !== null && days !== null
+            ? deposit + daily * days : null,
+          display_order: index,
+        };
+      });
+      const { error: variantError } = await supabase.from("product_variants").insert(variantRows);
+      if (variantError) throw new Error(`Product variants could not be saved: ${variantError.message}`);
+    }
 
     // ==================================================
     // UPLOAD PRODUCT IMAGES
@@ -522,6 +587,8 @@ export default function AddProductForm({
     );
 
     setImages([]);
+    setUseVariants(false);
+    setVariants([createEmptyVariant()]);
 
     await onSaved();
 
@@ -835,8 +902,77 @@ Suitable for: Off-grid & Hybrid Systems`
         </label>
       </section>
 
+      <section className="rounded-2xl border border-sky-200 bg-white p-6 shadow-sm">
+        <label className="flex items-start gap-3">
+          <input type="checkbox" checked={useVariants}
+            onChange={(e) => setUseVariants(e.target.checked)} className="mt-1 h-5 w-5" />
+          <span><b>This product has sizes / variants</b>
+            <span className="block text-sm font-normal text-slate-500">
+              Enable for TVs, refrigerators, laptops, phones, solar panels or other products whose price changes by size/capacity.
+            </span>
+          </span>
+        </label>
+
+        {useVariants && (
+          <div className="mt-6 space-y-5">
+            <div className="flex justify-end">
+              <button type="button" onClick={addVariant}
+                className="rounded-xl bg-[#0798ef] px-4 py-2.5 text-sm font-black text-white">
+                + Add Another Variant
+              </button>
+            </div>
+            {variants.map((variant, index) => {
+              const total = variant.lipaAvailable && variant.depositAmount && variant.dailyPayment && variant.paymentDays
+                ? Number(variant.depositAmount) + Number(variant.dailyPayment) * Number(variant.paymentDays) : 0;
+              return (
+                <div key={index} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="flex justify-between"><h3 className="font-black">Variant {index + 1}</h3>
+                    {variants.length > 1 && <button type="button" onClick={() => removeVariant(index)} className="font-black text-red-600">Remove</button>}
+                  </div>
+                  <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                    <label className="text-sm font-bold">Size / Option
+                      <input value={variant.variantName} onChange={e => updateVariant(index,{variantName:e.target.value})}
+                        className={inputClass} placeholder={'e.g. 32", 43", 256GB, 700W'} /></label>
+                    <label className="text-sm font-bold">Cash Price (KSh)
+                      <input type="number" min="0" value={variant.cashPrice} onChange={e => updateVariant(index,{cashPrice:e.target.value})}
+                        className={inputClass} /></label>
+                    <label className="text-sm font-bold">Stock Quantity
+                      <input type="number" min="0" value={variant.stockQuantity} onChange={e => updateVariant(index,{stockQuantity:e.target.value})}
+                        className={inputClass} /></label>
+                    <label className="text-sm font-bold">Availability
+                      <select value={variant.availability} onChange={e => updateVariant(index,{availability:e.target.value})} className={inputClass}>
+                        <option>Available</option><option>Out of Stock</option><option>Coming Soon</option><option>Sold</option>
+                      </select></label>
+                  </div>
+                  <label className="mt-5 flex items-center gap-3 font-bold">
+                    <input type="checkbox" checked={variant.lipaAvailable}
+                      onChange={e => updateVariant(index,{lipaAvailable:e.target.checked})} className="h-5 w-5" />
+                    Lipa Mdogo Mdogo Available for this variant
+                  </label>
+                  {variant.lipaAvailable && (
+                    <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                      <label className="text-sm font-bold">Deposit (KSh)<input type="number" min="0" value={variant.depositAmount}
+                        onChange={e=>updateVariant(index,{depositAmount:e.target.value})} className={inputClass}/></label>
+                      <label className="text-sm font-bold">Daily Payment (KSh)<input type="number" min="1" value={variant.dailyPayment}
+                        onChange={e=>updateVariant(index,{dailyPayment:e.target.value})} className={inputClass}/></label>
+                      <label className="text-sm font-bold">Number of Days<input type="number" min="1" value={variant.paymentDays}
+                        onChange={e=>updateVariant(index,{paymentDays:e.target.value})} className={inputClass}/></label>
+                      <div><p className="text-sm font-bold">Total Payable</p>
+                        <div className="mt-2 rounded-xl bg-emerald-50 px-4 py-3 font-black text-emerald-800">
+                          KSh {new Intl.NumberFormat("en-KE").format(total)}
+                        </div></div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       {/* LIPA MDOGO MDOGO */}
 
+      {!useVariants && (
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <label className="flex items-center gap-3">
           <input
@@ -939,6 +1075,7 @@ Suitable for: Off-grid & Hybrid Systems`
           </div>
         )}
       </section>
+      )}
 
       {/* PRODUCT PHOTOS */}
 

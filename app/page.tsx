@@ -53,6 +53,21 @@ const heroSlides = [
 
 
 
+type StoreVariant = {
+  id: string;
+  product_id: string;
+  variant_name: string;
+  cash_price: number;
+  availability: string;
+  stock_quantity: number;
+  lipa_mdogo_mdogo_available: boolean;
+  deposit_amount: number | null;
+  daily_payment: number | null;
+  payment_days: number | null;
+  total_payable: number | null;
+  display_order: number;
+};
+
 type StoreProduct = {
   id: string;
   name: string;
@@ -68,6 +83,7 @@ type StoreProduct = {
   payment_days: number | null;
   total_payable: number | null;
   product_images: { image_url: string; display_order: number }[];
+  product_variants: StoreVariant[];
 };
 
 type CookieChoice = "all" | "necessary";
@@ -91,6 +107,7 @@ export default function Home() {
   const [descriptionProduct, setDescriptionProduct] = useState<StoreProduct | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [imageZoom, setImageZoom] = useState(1);
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
 
   const filteredProducts = products.filter((product) => {
     const query = searchQuery.trim().toLowerCase();
@@ -101,7 +118,10 @@ export default function Home() {
       product.name.toLowerCase().includes(query) ||
       product.category.toLowerCase().includes(query) ||
       (product.description ?? "").toLowerCase().includes(query) ||
-      (product.specifications ?? "").toLowerCase().includes(query);
+      (product.specifications ?? "").toLowerCase().includes(query) ||
+      (product.product_variants ?? []).some((variant) =>
+        variant.variant_name.toLowerCase().includes(query)
+      );
     return matchesCategory && matchesSearch;
   });
 
@@ -185,6 +205,20 @@ export default function Home() {
           product_images (
             image_url,
             display_order
+          ),
+          product_variants (
+            id,
+            product_id,
+            variant_name,
+            cash_price,
+            availability,
+            stock_quantity,
+            lipa_mdogo_mdogo_available,
+            deposit_amount,
+            daily_payment,
+            payment_days,
+            total_payable,
+            display_order
           )
         `)
         .order("created_at", { ascending: false })
@@ -199,7 +233,19 @@ export default function Home() {
           product_images: [...(product.product_images ?? [])].sort(
             (a, b) => a.display_order - b.display_order
           ),
+          product_variants: [...(product.product_variants ?? [])].sort(
+            (a, b) => a.display_order - b.display_order
+          ),
         }));
+
+        const initialVariants: Record<string, string> = {};
+        normalized.forEach((product) => {
+          if (product.product_variants.length > 0) {
+            initialVariants[product.id] = product.product_variants[0].id;
+          }
+        });
+
+        setSelectedVariants(initialVariants);
         setProducts(normalized);
       }
 
@@ -598,8 +644,39 @@ export default function Home() {
             <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredProducts.map((product) => {
                 const image = product.product_images?.[0]?.image_url;
+                const variants = product.product_variants ?? [];
+                const selectedVariant =
+                  variants.find(
+                    (variant) => variant.id === selectedVariants[product.id]
+                  ) ?? variants[0] ?? null;
+
+                const displayPrice = selectedVariant
+                  ? selectedVariant.cash_price
+                  : product.cash_price;
+                const displayAvailability = selectedVariant
+                  ? selectedVariant.availability
+                  : product.availability;
+                const displayStock = selectedVariant
+                  ? selectedVariant.stock_quantity
+                  : product.stock_quantity;
+                const displayLipa = selectedVariant
+                  ? selectedVariant.lipa_mdogo_mdogo_available
+                  : product.lipa_mdogo_mdogo_available;
+                const displayDeposit = selectedVariant
+                  ? selectedVariant.deposit_amount
+                  : product.deposit_amount;
+                const displayDaily = selectedVariant
+                  ? selectedVariant.daily_payment
+                  : product.daily_payment;
+                const displayDays = selectedVariant
+                  ? selectedVariant.payment_days
+                  : product.payment_days;
+                const displayTotal = selectedVariant
+                  ? selectedVariant.total_payable
+                  : product.total_payable;
+
                 const whatsappText = encodeURIComponent(
-                  `Hello Smart Tech, I am interested in ${product.name}. Please share more information about the cash and Lipa Mdogo Mdogo options.`
+                  `Hello Smart Tech, I am interested in ${product.name}${selectedVariant ? ` — ${selectedVariant.variant_name}` : ""}. Please share more information about the cash and Lipa Mdogo Mdogo options.`
                 );
 
                 return (
@@ -629,22 +706,57 @@ export default function Home() {
                         </button>
                       )}
 
+                      {variants.length > 0 && (
+                        <div className="mt-4">
+                          <p className="text-xs font-black uppercase tracking-wider text-slate-500">
+                            Choose Size / Option
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {variants.map((variant) => (
+                              <button
+                                key={variant.id}
+                                type="button"
+                                onClick={() =>
+                                  setSelectedVariants((current) => ({
+                                    ...current,
+                                    [product.id]: variant.id,
+                                  }))
+                                }
+                                className={`rounded-full border px-3 py-2 text-sm font-black transition ${
+                                  selectedVariant?.id === variant.id
+                                    ? "border-[#0798ef] bg-[#0798ef] text-white"
+                                    : "border-slate-300 bg-white text-slate-700 hover:border-[#0798ef] hover:text-[#0798ef]"
+                                }`}
+                              >
+                                {variant.variant_name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <p className="mt-4 text-xl font-black text-[#0798ef]">
-                        KSh {new Intl.NumberFormat("en-KE").format(product.cash_price)}
+                        KSh {new Intl.NumberFormat("en-KE").format(displayPrice)}
                       </p>
 
-                      <p className={`mt-1 text-xs font-bold ${product.availability === "Available" ? "text-emerald-700" : "text-amber-700"}`}>
-                        {product.availability}
-                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-bold">
+                        <span className={displayAvailability === "Available" ? "text-emerald-700" : displayAvailability === "Sold" ? "text-red-700" : "text-amber-700"}>
+                          {displayAvailability}
+                        </span>
+                        {displayAvailability !== "Sold" && (
+                          <span className="text-slate-500">• Stock: {displayStock}</span>
+                        )}
+                      </div>
 
-                      {product.lipa_mdogo_mdogo_available && (
+                      {displayLipa && (
                         <div className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm">
                           <p className="font-black text-emerald-800">Lipa Mdogo Mdogo</p>
-                          <p className="mt-1 text-emerald-700">
-                            Deposit KSh {new Intl.NumberFormat("en-KE").format(product.deposit_amount ?? 0)}
-                            {" • "}
-                            KSh {new Intl.NumberFormat("en-KE").format(product.daily_payment ?? 0)}/day
-                          </p>
+                          <div className="mt-2 grid gap-1 text-emerald-700">
+                            <p>Deposit: <b>KSh {new Intl.NumberFormat("en-KE").format(displayDeposit ?? 0)}</b></p>
+                            <p>Daily: <b>KSh {new Intl.NumberFormat("en-KE").format(displayDaily ?? 0)}/day</b></p>
+                            {displayDays !== null && <p>Payment Period: <b>{displayDays} days</b></p>}
+                            {displayTotal !== null && <p>Total Payable: <b>KSh {new Intl.NumberFormat("en-KE").format(displayTotal)}</b></p>}
+                          </div>
                         </div>
                       )}
 

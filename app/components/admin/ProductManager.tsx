@@ -30,6 +30,23 @@ export type Product = {
   created_at: string;
 };
 
+
+export type ProductVariant = {
+  id: string;
+  product_id: string;
+  variant_name: string;
+  cash_price: number;
+  stock_quantity: number;
+  availability: string;
+  lipa_mdogo_mdogo_available: boolean;
+  deposit_amount: number | null;
+  daily_payment: number | null;
+  payment_days: number | null;
+  total_payable: number | null;
+  display_order: number;
+};
+
+
 type Props = {
   products: Product[];
 
@@ -70,6 +87,20 @@ export default function ProductManager({
   const [editDaily, setEditDaily] = useState("");
   const [editDays, setEditDays] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [variantProduct, setVariantProduct] = useState<Product | null>(null);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [variantsLoading, setVariantsLoading] = useState(false);
+  const [savingVariantId, setSavingVariantId] = useState<string | null>(null);
+  const [newVariant, setNewVariant] = useState({
+    variant_name: "",
+    cash_price: "",
+    stock_quantity: "1",
+    availability: "Available",
+    lipa_mdogo_mdogo_available: false,
+    deposit_amount: "",
+    daily_payment: "",
+    payment_days: "",
+  });
 
   const openEdit = (product: Product) => {
     setEditing(product);
@@ -139,6 +170,135 @@ export default function ProductManager({
 
     onMessage(`${editName.trim()} updated successfully.`);
     setEditing(null);
+    await onChanged();
+  };
+
+  const loadVariants = async (product: Product) => {
+    setVariantProduct(product);
+    setVariantsLoading(true);
+    onError("");
+    onMessage("");
+
+    const { data, error } = await supabase
+      .from("product_variants")
+      .select("*")
+      .eq("product_id", product.id)
+      .order("display_order", { ascending: true });
+
+    setVariantsLoading(false);
+
+    if (error) {
+      onError(error.message);
+      return;
+    }
+
+    setVariants((data ?? []) as ProductVariant[]);
+  };
+
+  const saveVariant = async (variant: ProductVariant) => {
+    setSavingVariantId(variant.id);
+    onError("");
+    onMessage("");
+
+    const total = variant.lipa_mdogo_mdogo_available &&
+      variant.deposit_amount !== null &&
+      variant.daily_payment !== null &&
+      variant.payment_days !== null
+        ? Number(variant.deposit_amount) +
+          Number(variant.daily_payment) * Number(variant.payment_days)
+        : null;
+
+    const { error } = await supabase
+      .from("product_variants")
+      .update({
+        variant_name: variant.variant_name.trim(),
+        cash_price: Number(variant.cash_price),
+        stock_quantity: variant.availability === "Sold" ? 0 : Number(variant.stock_quantity),
+        availability: variant.availability,
+        lipa_mdogo_mdogo_available: variant.lipa_mdogo_mdogo_available,
+        deposit_amount: variant.lipa_mdogo_mdogo_available ? variant.deposit_amount : null,
+        daily_payment: variant.lipa_mdogo_mdogo_available ? variant.daily_payment : null,
+        payment_days: variant.lipa_mdogo_mdogo_available ? variant.payment_days : null,
+        total_payable: variant.lipa_mdogo_mdogo_available ? total : null,
+      })
+      .eq("id", variant.id);
+
+    setSavingVariantId(null);
+
+    if (error) {
+      onError(error.message);
+      return;
+    }
+
+    onMessage(`${variant.variant_name} updated successfully.`);
+    if (variantProduct) await loadVariants(variantProduct);
+    await onChanged();
+  };
+
+  const deleteVariant = async (variant: ProductVariant) => {
+    if (!window.confirm(`Delete variant "${variant.variant_name}"?`)) return;
+
+    const { error } = await supabase
+      .from("product_variants")
+      .delete()
+      .eq("id", variant.id);
+
+    if (error) {
+      onError(error.message);
+      return;
+    }
+
+    onMessage(`${variant.variant_name} variant deleted.`);
+    if (variantProduct) await loadVariants(variantProduct);
+    await onChanged();
+  };
+
+  const addNewVariant = async () => {
+    if (!variantProduct) return;
+    if (!newVariant.variant_name.trim() || !newVariant.cash_price) {
+      onError("Variant name and cash price are required.");
+      return;
+    }
+
+    const deposit = newVariant.lipa_mdogo_mdogo_available ? Number(newVariant.deposit_amount) : null;
+    const daily = newVariant.lipa_mdogo_mdogo_available ? Number(newVariant.daily_payment) : null;
+    const days = newVariant.lipa_mdogo_mdogo_available ? Number(newVariant.payment_days) : null;
+
+    if (newVariant.lipa_mdogo_mdogo_available &&
+      (!newVariant.deposit_amount || !newVariant.daily_payment || !newVariant.payment_days)) {
+      onError("Complete all Lipa Mdogo Mdogo fields for the new variant.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("product_variants")
+      .insert({
+        product_id: variantProduct.id,
+        variant_name: newVariant.variant_name.trim(),
+        cash_price: Number(newVariant.cash_price),
+        stock_quantity: newVariant.availability === "Sold" ? 0 : Number(newVariant.stock_quantity),
+        availability: newVariant.availability,
+        lipa_mdogo_mdogo_available: newVariant.lipa_mdogo_mdogo_available,
+        deposit_amount: deposit,
+        daily_payment: daily,
+        payment_days: days,
+        total_payable: newVariant.lipa_mdogo_mdogo_available && deposit !== null && daily !== null && days !== null
+          ? deposit + daily * days : null,
+        display_order: variants.length,
+      });
+
+    if (error) {
+      onError(error.message);
+      return;
+    }
+
+    setNewVariant({
+      variant_name: "", cash_price: "", stock_quantity: "1",
+      availability: "Available", lipa_mdogo_mdogo_available: false,
+      deposit_amount: "", daily_payment: "", payment_days: "",
+    });
+    onMessage("New variant added.");
+    await loadVariants(variantProduct);
     await onChanged();
   };
 
@@ -713,6 +873,14 @@ export default function ProductManager({
 
                 <button
                   type="button"
+                  onClick={() => loadVariants(product)}
+                  className="rounded-xl border border-sky-200 px-4 py-2.5 text-sm font-black text-[#0798ef] transition hover:bg-sky-50"
+                >
+                  Manage Variants
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => openEdit(product)}
                   className="rounded-xl bg-[#0798ef] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#087bd0]"
                 >
@@ -757,6 +925,103 @@ export default function ProductManager({
           </article>
 
         )
+      )}
+
+      {variantProduct && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-black/55 p-4">
+          <div className="mx-auto my-6 max-w-5xl rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[.25em] text-[#0798ef]">Variant Management</p>
+                <h2 className="mt-2 text-2xl font-black text-[#0b2947]">{variantProduct.name}</h2>
+                <p className="mt-1 text-sm text-slate-500">Manage sizes, prices, stock, availability and Lipa Mdogo Mdogo plans.</p>
+              </div>
+              <button type="button" onClick={() => setVariantProduct(null)} className="rounded-xl border px-4 py-2 font-black">Close</button>
+            </div>
+
+            {variantsLoading ? (
+              <p className="mt-8 text-center font-bold text-slate-500">Loading variants...</p>
+            ) : (
+              <div className="mt-6 space-y-5">
+                {variants.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-slate-500">
+                    This product does not have variants yet. Add one below if needed.
+                  </div>
+                )}
+
+                {variants.map((variant, index) => (
+                  <div key={variant.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="font-black text-[#0b2947]">Variant {index + 1}</h3>
+                      <button type="button" onClick={() => deleteVariant(variant)} className="text-sm font-black text-red-600">Delete Variant</button>
+                    </div>
+                    <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                      <label className="text-sm font-bold">Size / Option
+                        <input value={variant.variant_name} onChange={e => setVariants(current => current.map(v => v.id === variant.id ? {...v,variant_name:e.target.value}:v))}
+                          className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+                      <label className="text-sm font-bold">Cash Price
+                        <input type="number" min="0" value={variant.cash_price} onChange={e => setVariants(current => current.map(v => v.id === variant.id ? {...v,cash_price:Number(e.target.value)}:v))}
+                          className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+                      <label className="text-sm font-bold">Stock
+                        <input type="number" min="0" value={variant.stock_quantity} onChange={e => setVariants(current => current.map(v => v.id === variant.id ? {...v,stock_quantity:Number(e.target.value)}:v))}
+                          className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+                      <label className="text-sm font-bold">Availability
+                        <select value={variant.availability} onChange={e => setVariants(current => current.map(v => v.id === variant.id ? {...v,availability:e.target.value}:v))}
+                          className="mt-2 w-full rounded-xl border px-4 py-3">
+                          <option>Available</option><option>Out of Stock</option><option>Coming Soon</option><option>Sold</option>
+                        </select></label>
+                    </div>
+                    <label className="mt-4 flex items-center gap-2 font-bold">
+                      <input type="checkbox" checked={variant.lipa_mdogo_mdogo_available}
+                        onChange={e => setVariants(current => current.map(v => v.id === variant.id ? {...v,lipa_mdogo_mdogo_available:e.target.checked}:v))}/>
+                      Lipa Mdogo Mdogo Available
+                    </label>
+                    {variant.lipa_mdogo_mdogo_available && (
+                      <div className="mt-4 grid gap-4 md:grid-cols-4">
+                        <label className="text-sm font-bold">Deposit<input type="number" min="0" value={variant.deposit_amount ?? ""}
+                          onChange={e=>setVariants(current=>current.map(v=>v.id===variant.id?{...v,deposit_amount:e.target.value===""?null:Number(e.target.value)}:v))}
+                          className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+                        <label className="text-sm font-bold">Daily Payment<input type="number" min="1" value={variant.daily_payment ?? ""}
+                          onChange={e=>setVariants(current=>current.map(v=>v.id===variant.id?{...v,daily_payment:e.target.value===""?null:Number(e.target.value)}:v))}
+                          className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+                        <label className="text-sm font-bold">Days<input type="number" min="1" value={variant.payment_days ?? ""}
+                          onChange={e=>setVariants(current=>current.map(v=>v.id===variant.id?{...v,payment_days:e.target.value===""?null:Number(e.target.value)}:v))}
+                          className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+                        <div><p className="text-sm font-bold">Total</p><div className="mt-2 rounded-xl bg-emerald-50 px-4 py-3 font-black text-emerald-800">
+                          {money(variant.deposit_amount !== null && variant.daily_payment !== null && variant.payment_days !== null
+                            ? Number(variant.deposit_amount)+Number(variant.daily_payment)*Number(variant.payment_days):null)}
+                        </div></div>
+                      </div>
+                    )}
+                    <button type="button" disabled={savingVariantId===variant.id} onClick={()=>saveVariant(variant)}
+                      className="mt-4 rounded-xl bg-[#0798ef] px-5 py-2.5 font-black text-white disabled:opacity-60">
+                      {savingVariantId===variant.id ? "Saving..." : "Save Variant"}
+                    </button>
+                  </div>
+                ))}
+
+                <div className="rounded-2xl border-2 border-dashed border-sky-200 p-5">
+                  <h3 className="font-black text-[#0b2947]">Add Another Variant</h3>
+                  <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <label className="text-sm font-bold">Size / Option<input value={newVariant.variant_name} onChange={e=>setNewVariant({...newVariant,variant_name:e.target.value})} className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+                    <label className="text-sm font-bold">Cash Price<input type="number" min="0" value={newVariant.cash_price} onChange={e=>setNewVariant({...newVariant,cash_price:e.target.value})} className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+                    <label className="text-sm font-bold">Stock<input type="number" min="0" value={newVariant.stock_quantity} onChange={e=>setNewVariant({...newVariant,stock_quantity:e.target.value})} className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+                    <label className="text-sm font-bold">Availability<select value={newVariant.availability} onChange={e=>setNewVariant({...newVariant,availability:e.target.value})} className="mt-2 w-full rounded-xl border px-4 py-3"><option>Available</option><option>Out of Stock</option><option>Coming Soon</option><option>Sold</option></select></label>
+                  </div>
+                  <label className="mt-4 flex items-center gap-2 font-bold"><input type="checkbox" checked={newVariant.lipa_mdogo_mdogo_available} onChange={e=>setNewVariant({...newVariant,lipa_mdogo_mdogo_available:e.target.checked})}/> Lipa Mdogo Mdogo Available</label>
+                  {newVariant.lipa_mdogo_mdogo_available && (
+                    <div className="mt-4 grid gap-4 md:grid-cols-3">
+                      <label className="text-sm font-bold">Deposit<input type="number" min="0" value={newVariant.deposit_amount} onChange={e=>setNewVariant({...newVariant,deposit_amount:e.target.value})} className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+                      <label className="text-sm font-bold">Daily Payment<input type="number" min="1" value={newVariant.daily_payment} onChange={e=>setNewVariant({...newVariant,daily_payment:e.target.value})} className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+                      <label className="text-sm font-bold">Days<input type="number" min="1" value={newVariant.payment_days} onChange={e=>setNewVariant({...newVariant,payment_days:e.target.value})} className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+                    </div>
+                  )}
+                  <button type="button" onClick={addNewVariant} className="mt-4 rounded-xl bg-emerald-600 px-5 py-2.5 font-black text-white">+ Add Variant</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {editing && (
