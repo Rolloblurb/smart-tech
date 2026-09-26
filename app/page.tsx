@@ -82,6 +82,7 @@ type StoreProduct = {
   daily_payment: number | null;
   payment_days: number | null;
   total_payable: number | null;
+  display_order: number;
   product_images: { image_url: string; display_order: number }[];
   product_variants: StoreVariant[];
 };
@@ -202,6 +203,7 @@ export default function Home() {
           daily_payment,
           payment_days,
           total_payable,
+          display_order,
           product_images (
             image_url,
             display_order
@@ -221,7 +223,8 @@ export default function Home() {
             display_order
           )
         `)
-        .order("created_at", { ascending: false })
+        .order("display_order", { ascending: true })
+        .order("name", { ascending: true })
         .limit(12);
 
       if (error) {

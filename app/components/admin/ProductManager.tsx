@@ -27,6 +27,7 @@ export type Product = {
   payment_days: number | null;
   total_payable: number | null;
 
+  display_order: number;
   created_at: string;
 };
 
@@ -80,6 +81,7 @@ export default function ProductManager({
   const [editSpecifications, setEditSpecifications] = useState("");
   const [editCashPrice, setEditCashPrice] = useState("");
   const [editStock, setEditStock] = useState("");
+  const [editDisplayOrder, setEditDisplayOrder] = useState("0");
   const [editAvailability, setEditAvailability] = useState("Available");
   const [editFeatured, setEditFeatured] = useState(false);
   const [editLipa, setEditLipa] = useState(false);
@@ -113,6 +115,7 @@ export default function ProductManager({
     setEditSpecifications(product.specifications ?? "");
     setEditCashPrice(String(product.cash_price));
     setEditStock(String(product.stock_quantity));
+    setEditDisplayOrder(String(product.display_order ?? 0));
     setEditAvailability(product.availability);
     setEditFeatured(product.featured);
     setEditLipa(product.lipa_mdogo_mdogo_available);
@@ -152,6 +155,7 @@ export default function ProductManager({
         specifications: editSpecifications.trim() || null,
         cash_price: Number(editCashPrice),
         stock_quantity: Number(editStock),
+        display_order: Number(editDisplayOrder),
         availability: editAvailability,
         featured: editFeatured,
         lipa_mdogo_mdogo_available: editLipa,
@@ -745,6 +749,13 @@ export default function ProductManager({
 
                   </div>
 
+                  <div>
+                    <span className="text-slate-500">Display Order</span>
+                    <p className="font-black text-[#0798ef]">
+                      {product.display_order ?? 0}
+                    </p>
+                  </div>
+
 
                   {product.lipa_mdogo_mdogo_available && (
 
@@ -1043,6 +1054,7 @@ export default function ProductManager({
               <label className="text-sm font-bold">Model<input value={editModel} onChange={(e) => setEditModel(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
               <label className="text-sm font-bold">Cash Price (KSh)<input type="number" min="0" value={editCashPrice} onChange={(e) => setEditCashPrice(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
               <label className="text-sm font-bold">Stock Quantity<input type="number" min="0" value={editStock} onChange={(e) => setEditStock(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
+              <label className="text-sm font-bold">Display Order<input type="number" min="0" step="1" value={editDisplayOrder} onChange={(e) => setEditDisplayOrder(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /><span className="mt-1 block text-xs font-normal text-slate-500">Lower numbers appear first in the public catalogue.</span></label>
               <label className="text-sm font-bold">Availability<select value={editAvailability} onChange={(e) => setEditAvailability(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3"><option>Available</option><option>Out of Stock</option><option>Coming Soon</option><option>Sold</option></select></label>
               <label className="text-sm font-bold">Description<textarea rows={4} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
               <label className="text-sm font-bold">Specifications<textarea rows={4} value={editSpecifications} onChange={(e) => setEditSpecifications(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
