@@ -165,13 +165,32 @@ export default function ProductManager({
     onError("");
     onMessage("");
 
+    const product = products.find(
+      (item) => item.id === productId
+    );
+
+    const updates: {
+      availability: string;
+      stock_quantity?: number;
+    } = {
+      availability,
+    };
+
+    if (availability === "Sold") {
+      updates.stock_quantity = 0;
+    } else if (
+      availability === "Available" &&
+      product?.availability === "Sold" &&
+      product.stock_quantity === 0
+    ) {
+      updates.stock_quantity = 1;
+    }
+
     const {
       error,
     } = await supabase
       .from("products")
-      .update({
-        availability,
-      })
+      .update(updates)
       .eq(
         "id",
         productId
@@ -470,6 +489,13 @@ export default function ProductManager({
                   </span>
 
 
+                  {product.availability === "Sold" && (
+                    <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-700">
+                      SOLD
+                    </span>
+                  )}
+
+
                   {product.featured && (
 
                     <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
@@ -678,6 +704,10 @@ export default function ProductManager({
                     Coming Soon
                   </option>
 
+                  <option>
+                    Sold
+                  </option>
+
                 </select>
 
 
@@ -748,7 +778,7 @@ export default function ProductManager({
               <label className="text-sm font-bold">Model<input value={editModel} onChange={(e) => setEditModel(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
               <label className="text-sm font-bold">Cash Price (KSh)<input type="number" min="0" value={editCashPrice} onChange={(e) => setEditCashPrice(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
               <label className="text-sm font-bold">Stock Quantity<input type="number" min="0" value={editStock} onChange={(e) => setEditStock(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
-              <label className="text-sm font-bold">Availability<select value={editAvailability} onChange={(e) => setEditAvailability(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3"><option>Available</option><option>Out of Stock</option><option>Coming Soon</option></select></label>
+              <label className="text-sm font-bold">Availability<select value={editAvailability} onChange={(e) => setEditAvailability(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3"><option>Available</option><option>Out of Stock</option><option>Coming Soon</option><option>Sold</option></select></label>
               <label className="text-sm font-bold">Description<textarea rows={4} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
               <label className="text-sm font-bold">Specifications<textarea rows={4} value={editSpecifications} onChange={(e) => setEditSpecifications(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
             </div>
