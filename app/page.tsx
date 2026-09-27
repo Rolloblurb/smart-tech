@@ -133,6 +133,38 @@ export default function Home() {
     return matchesCategory && matchesSearch;
   });
 
+  const categoryOrder = categories.map((category) => category.title);
+
+  const orderedFilteredProducts = [...filteredProducts].sort((a, b) => {
+    const categoryA = categoryOrder.indexOf(a.category);
+    const categoryB = categoryOrder.indexOf(b.category);
+    const safeCategoryA = categoryA === -1 ? categoryOrder.length : categoryA;
+    const safeCategoryB = categoryB === -1 ? categoryOrder.length : categoryB;
+
+    if (safeCategoryA !== safeCategoryB) return safeCategoryA - safeCategoryB;
+    if ((a.display_order ?? 0) !== (b.display_order ?? 0)) {
+      return (a.display_order ?? 0) - (b.display_order ?? 0);
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  const productGroups =
+    selectedCategory === "All Products"
+      ? categoryOrder
+          .map((category) => ({
+            category,
+            products: orderedFilteredProducts.filter(
+              (product) => product.category === category
+            ),
+          }))
+          .filter((group) => group.products.length > 0)
+      : [
+          {
+            category: selectedCategory,
+            products: orderedFilteredProducts,
+          },
+        ];
+
   const showCategory = (category: string) => {
     setSelectedCategory(category);
     window.setTimeout(() => {
@@ -678,8 +710,18 @@ export default function Home() {
               </button>
             </div>
           ) : (
-            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredProducts.map((product) => {
+            <div className="mt-8 space-y-12">
+              {productGroups.map((group) => (
+                <section key={group.category}>
+                  <div className="mb-5 flex items-center gap-4">
+                    <h3 className="shrink-0 text-2xl font-black text-[#0b2947]">
+                      {group.category}
+                    </h3>
+                    <div className="h-px flex-1 bg-slate-200" />
+                  </div>
+
+                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {group.products.map((product) => {
                 const image = product.product_images?.[0]?.image_url;
                 const variants = product.product_variants ?? [];
                 const selectedVariant =
@@ -818,8 +860,11 @@ export default function Home() {
                       </div>
                     </div>
                   </article>
-                );
-              })}
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
             </div>
           )}
         </div>
