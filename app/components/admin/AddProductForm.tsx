@@ -266,11 +266,17 @@ export default function AddProductForm({
         model:
           form.model.trim() || null,
         cash_price:
-          cashPrice,
+          useVariants ? Number(variants[0]?.cashPrice ?? 0) : cashPrice,
         stock_quantity:
-          stockQuantity,
+          useVariants
+            ? variants.reduce((sum, variant) => sum + Number(variant.stockQuantity || 0), 0)
+            : stockQuantity,
         availability:
-          form.availability,
+          useVariants
+            ? (variants.find((variant) => variant.availability === "Available")?.availability
+                ?? variants[0]?.availability
+                ?? "Out of Stock")
+            : form.availability,
         featured:
           form.featured,
         lipa_mdogo_mdogo_available:
@@ -339,7 +345,9 @@ export default function AddProductForm({
           form.featured,
 
         lipa_mdogo_mdogo_available:
-          form.lipaAvailable,
+          useVariants
+            ? variants.some((variant) => variant.lipaAvailable)
+            : form.lipaAvailable,
 
         deposit_amount:
           useVariants ? null : form.lipaAvailable ? depositAmount : null,
@@ -776,72 +784,47 @@ export default function AddProductForm({
             />
           </label>
 
-          <label className="text-sm font-bold">
-            Cash Price (KSh)
+          {!useVariants && (
+            <>
+              <label className="text-sm font-bold">
+                Cash Price (KSh)
+                <input required={!useVariants} min="0" step="1" type="number"
+                  value={form.cashPrice}
+                  onChange={(event) => setForm({ ...form, cashPrice: event.target.value })}
+                  className={inputClass} placeholder="10000" />
+              </label>
 
-            <input
-              required
-              min="0"
-              step="1"
-              type="number"
-              value={form.cashPrice}
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  cashPrice: event.target.value,
-                })
-              }
-              className={inputClass}
-              placeholder="10000"
-            />
-          </label>
+              <label className="text-sm font-bold">
+                Stock Quantity
+                <input required={!useVariants} min="0" step="1" type="number"
+                  value={form.stockQuantity}
+                  onChange={(event) => setForm({ ...form, stockQuantity: event.target.value })}
+                  className={inputClass} />
+              </label>
 
-          <label className="text-sm font-bold">
-            Stock Quantity
-
-            <input
-              required
-              min="0"
-              step="1"
-              type="number"
-              value={form.stockQuantity}
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  stockQuantity: event.target.value,
-                })
-              }
-              className={inputClass}
-            />
-          </label>
-
-          <label className="text-sm font-bold">
-            Availability
-
-            <select
-              value={form.availability}
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  availability: event.target.value,
-                })
-              }
-              className={inputClass}
-            >
-              <option>
-                Available
-              </option>
-
-              <option>
-                Out of Stock
-              </option>
-
-              <option>
-                Coming Soon
-              </option>
-            </select>
-          </label>
+              <label className="text-sm font-bold">
+                Availability
+                <select value={form.availability}
+                  onChange={(event) => setForm({ ...form, availability: event.target.value })}
+                  className={inputClass}>
+                  <option>Available</option>
+                  <option>Out of Stock</option>
+                  <option>Coming Soon</option>
+                  <option>Sold</option>
+                </select>
+              </label>
+            </>
+          )}
         </div>
+
+        {useVariants && (
+          <div className="mt-5 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-slate-700">
+            <b className="text-[#0b2947]">Variant pricing enabled.</b>
+            <p className="mt-1">
+              Cash price, stock, availability and Lipa Mdogo Mdogo terms are controlled by the variants below. You do not need to fill the main product pricing fields.
+            </p>
+          </div>
+        )}
 
         {/* DESCRIPTION / SPECIFICATIONS */}
 
