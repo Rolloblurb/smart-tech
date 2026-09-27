@@ -60,6 +60,13 @@ export default function AddProductForm({
   const inputClass =
     "mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-[#0798ef] focus:ring-4 focus:ring-sky-100";
 
+  const paymentPeriodLabel = (daysValue: string | number) => {
+    const days = Number(daysValue);
+    if (!days || Number.isNaN(days) || days <= 0) return "";
+    const months = Math.ceil(days / 30);
+    return `${months} ${months === 1 ? "Month" : "Months"} (${days} ${days === 1 ? "Day" : "Days"})`;
+  };
+
   const totalPayable =
     form.lipaAvailable &&
     form.depositAmount &&
@@ -939,7 +946,13 @@ Suitable for: Off-grid & Hybrid Systems`
                       <label className="text-sm font-bold">Daily Payment (KSh)<input type="number" min="1" value={variant.dailyPayment}
                         onChange={e=>updateVariant(index,{dailyPayment:e.target.value})} className={inputClass}/></label>
                       <label className="text-sm font-bold">Number of Days<input type="number" min="1" value={variant.paymentDays}
-                        onChange={e=>updateVariant(index,{paymentDays:e.target.value})} className={inputClass}/></label>
+                        onChange={e=>updateVariant(index,{paymentDays:e.target.value})} className={inputClass}/>
+                        {variant.paymentDays && (
+                          <span className="mt-2 block rounded-lg bg-sky-50 px-3 py-2 text-xs font-black text-[#087bd0]">
+                            Payment Period: {paymentPeriodLabel(variant.paymentDays)}
+                          </span>
+                        )}
+                      </label>
                       <div><p className="text-sm font-bold">Total Payable</p>
                         <div className="mt-2 rounded-xl bg-emerald-50 px-4 py-3 font-black text-emerald-800">
                           KSh {new Intl.NumberFormat("en-KE").format(total)}
@@ -1041,6 +1054,11 @@ Suitable for: Off-grid & Hybrid Systems`
                 className={inputClass}
                 placeholder="150"
               />
+              {form.paymentDays && (
+                <span className="mt-2 block rounded-lg bg-sky-50 px-3 py-2 text-xs font-black text-[#087bd0]">
+                  Payment Period: {paymentPeriodLabel(form.paymentDays)}
+                </span>
+              )}
             </label>
 
             <div>

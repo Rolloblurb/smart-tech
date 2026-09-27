@@ -318,6 +318,13 @@ export default function ProductManager({
     ).format(value)}`;
   };
 
+  const paymentPeriodLabel = (daysValue: string | number | null) => {
+    const days = Number(daysValue);
+    if (!days || Number.isNaN(days) || days <= 0) return "—";
+    const months = Math.ceil(days / 30);
+    return `${months} ${months === 1 ? "Month" : "Months"} (${days} ${days === 1 ? "Day" : "Days"})`;
+  };
+
   // -----------------------------------------
   // CHANGE PRODUCT AVAILABILITY
   // -----------------------------------------
@@ -997,7 +1004,13 @@ export default function ProductManager({
                           className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
                         <label className="text-sm font-bold">Days<input type="number" min="1" value={variant.payment_days ?? ""}
                           onChange={e=>setVariants(current=>current.map(v=>v.id===variant.id?{...v,payment_days:e.target.value===""?null:Number(e.target.value)}:v))}
-                          className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+                          className="mt-2 w-full rounded-xl border px-4 py-3"/>
+                          {variant.payment_days !== null && (
+                            <span className="mt-2 block rounded-lg bg-sky-50 px-3 py-2 text-xs font-black text-[#087bd0]">
+                              {paymentPeriodLabel(variant.payment_days)}
+                            </span>
+                          )}
+                        </label>
                         <div><p className="text-sm font-bold">Total</p><div className="mt-2 rounded-xl bg-emerald-50 px-4 py-3 font-black text-emerald-800">
                           {money(variant.deposit_amount !== null && variant.daily_payment !== null && variant.payment_days !== null
                             ? Number(variant.deposit_amount)+Number(variant.daily_payment)*Number(variant.payment_days):null)}
@@ -1024,7 +1037,13 @@ export default function ProductManager({
                     <div className="mt-4 grid gap-4 md:grid-cols-3">
                       <label className="text-sm font-bold">Deposit<input type="number" min="0" value={newVariant.deposit_amount} onChange={e=>setNewVariant({...newVariant,deposit_amount:e.target.value})} className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
                       <label className="text-sm font-bold">Daily Payment<input type="number" min="1" value={newVariant.daily_payment} onChange={e=>setNewVariant({...newVariant,daily_payment:e.target.value})} className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
-                      <label className="text-sm font-bold">Days<input type="number" min="1" value={newVariant.payment_days} onChange={e=>setNewVariant({...newVariant,payment_days:e.target.value})} className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
+                      <label className="text-sm font-bold">Days<input type="number" min="1" value={newVariant.payment_days} onChange={e=>setNewVariant({...newVariant,payment_days:e.target.value})} className="mt-2 w-full rounded-xl border px-4 py-3"/>
+                        {newVariant.payment_days && (
+                          <span className="mt-2 block rounded-lg bg-sky-50 px-3 py-2 text-xs font-black text-[#087bd0]">
+                            {paymentPeriodLabel(newVariant.payment_days)}
+                          </span>
+                        )}
+                      </label>
                     </div>
                   )}
                   <button type="button" onClick={addNewVariant} className="mt-4 rounded-xl bg-emerald-600 px-5 py-2.5 font-black text-white">+ Add Variant</button>
@@ -1069,7 +1088,13 @@ export default function ProductManager({
               <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 <label className="text-sm font-bold">Deposit<input type="number" min="0" value={editDeposit} onChange={(e) => setEditDeposit(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
                 <label className="text-sm font-bold">Daily Payment<input type="number" min="0" value={editDaily} onChange={(e) => setEditDaily(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
-                <label className="text-sm font-bold">Payment Days<input type="number" min="1" value={editDays} onChange={(e) => setEditDays(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
+                <label className="text-sm font-bold">Payment Days<input type="number" min="1" value={editDays} onChange={(e) => setEditDays(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" />
+                  {editDays && (
+                    <span className="mt-2 block rounded-lg bg-sky-50 px-3 py-2 text-xs font-black text-[#087bd0]">
+                      {paymentPeriodLabel(editDays)}
+                    </span>
+                  )}
+                </label>
                 <div><p className="text-sm font-bold">Total Payable</p><div className="mt-2 rounded-xl bg-emerald-50 px-4 py-3 font-black text-emerald-800">{money(Number(editDeposit || 0) + Number(editDaily || 0) * Number(editDays || 0))}</div></div>
               </div>
             )}

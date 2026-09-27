@@ -110,6 +110,13 @@ export default function Home() {
   const [imageZoom, setImageZoom] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
 
+  const paymentPeriodLabel = (daysValue: number | null) => {
+    const days = Number(daysValue);
+    if (!days || Number.isNaN(days) || days <= 0) return "";
+    const months = Math.ceil(days / 30);
+    return `${months} ${months === 1 ? "Month" : "Months"} (${days} ${days === 1 ? "Day" : "Days"})`;
+  };
+
   const filteredProducts = products.filter((product) => {
     const query = searchQuery.trim().toLowerCase();
     const matchesCategory =
@@ -309,7 +316,7 @@ export default function Home() {
       <div className="bg-[#073a63] text-white">
         <div className="mx-auto flex max-w-7xl flex-wrap justify-between gap-2 px-4 py-2 text-xs sm:px-6">
           <div className="flex flex-wrap gap-5">
-            <span>📍 Kenya</span><span>🚚 Countrywide Delivery</span><span>🛡️ Secure Payments</span>
+            <span>Nairobi, Kenya</span><span>Free Countrywide Delivery</span><span>Secure Payments</span>
           </div>
           <span className="hidden sm:block">Smart Products. A Brighter Tomorrow.</span>
         </div>
@@ -411,6 +418,33 @@ export default function Home() {
         </nav>
       </header>
 
+      <section className="relative overflow-hidden border-b border-sky-200 bg-gradient-to-r from-[#041f38] via-[#087ee8] to-[#0798ef] text-white">
+        <div className="pointer-events-none absolute -left-12 -top-16 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+        <div className="pointer-events-none absolute -right-10 -bottom-20 h-48 w-48 rounded-full bg-cyan-200/15 blur-3xl" />
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative z-10">
+            <p className="text-xs font-black uppercase tracking-[.28em] text-cyan-100">
+              Smart Tech Offers
+            </p>
+            <p className="mt-1 text-lg font-black sm:text-xl">
+              Quality Tech • Flexible Payments • Free Countrywide Delivery
+            </p>
+            <p className="mt-1 text-sm text-white/80">
+              Shop selected products with Lipa Mdogo Mdogo and convenient daily payment plans.
+            </p>
+          </div>
+          <div className="relative z-10 flex flex-wrap gap-2">
+            <a href="#products" className="rounded-xl bg-white px-5 py-3 text-sm font-black text-[#075c9d] shadow-lg transition hover:-translate-y-0.5">
+              Shop Deals
+            </a>
+            <a href="https://wa.me/254785709176?text=Hello%20Smart%20Tech.%20I%20would%20like%20to%20know%20about%20your%20current%20offers." target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-5 py-3 text-sm font-black text-white backdrop-blur transition hover:bg-white/20">
+              <FaWhatsapp /> WhatsApp Us
+            </a>
+          </div>
+        </div>
+      </section>
+
       <section
         id="home"
         className="relative overflow-hidden bg-gradient-to-r from-[#062c4a] via-[#074c79] to-[#0a75a7] text-white"
@@ -453,15 +487,15 @@ export default function Home() {
 
             <div className="mt-10 grid gap-4 text-sm sm:grid-cols-3">
               {[
-                ["🚚", "Countrywide Delivery"],
-                ["🛡️", "Secure Payments"],
-                ["🎧", "Customer Support"],
+                ["", "Free Countrywide Delivery"],
+                ["", "Secure Payments"],
+                ["", "Customer Support"],
               ].map(([icon, label]) => (
                 <div
                   key={label}
                   className="rounded-xl border border-white/10 bg-white/5 p-3 transition duration-200 hover:-translate-y-1 hover:bg-white/10"
                 >
-                  <span>{icon}</span> <b>{label}</b>
+                  {icon && <span>{icon}</span>} <b>{label}</b>
                 </div>
               ))}
             </div>
@@ -630,13 +664,13 @@ export default function Home() {
             </div>
           ) : products.length === 0 ? (
             <div className="mt-8 rounded-3xl border border-dashed border-sky-200 bg-gradient-to-br from-sky-50 to-white p-10 text-center">
-              <div className="text-5xl">🛍️</div>
+              
               <h3 className="mt-4 text-2xl font-black">New products are coming soon</h3>
               <p className="mt-2 text-slate-500">Check back shortly for the latest Smart Tech catalogue.</p>
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="mt-8 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
-              <div className="text-5xl">🔎</div>
+              
               <h3 className="mt-4 text-2xl font-black">No products found</h3>
               <p className="mt-2 text-slate-500">Try another search or choose a different product category.</p>
               <button type="button" onClick={() => { setSearchQuery(""); setSelectedCategory("All Products"); }} className="mt-5 rounded-xl bg-[#0798ef] px-5 py-3 font-black text-white">
@@ -690,7 +724,7 @@ export default function Home() {
                           <img src={image} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                         </button>
                       ) : (
-                        <div className="grid h-full place-items-center text-5xl">🛍️</div>
+                        <div className="grid h-full place-items-center text-5xl"></div>
                       )}
                       <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-black text-[#0b2947] shadow">
                         {product.category}
@@ -757,7 +791,9 @@ export default function Home() {
                           <div className="mt-2 grid gap-1 text-emerald-700">
                             <p>Deposit: <b>KSh {new Intl.NumberFormat("en-KE").format(displayDeposit ?? 0)}</b></p>
                             <p>Daily: <b>KSh {new Intl.NumberFormat("en-KE").format(displayDaily ?? 0)}/day</b></p>
-                            {displayDays !== null && <p>Payment Period: <b>{displayDays} days</b></p>}
+                            {displayDays !== null && (
+                              <p>Payment Period: <b>{paymentPeriodLabel(displayDays)}</b></p>
+                            )}
                             {displayTotal !== null && <p>Total Payable: <b>KSh {new Intl.NumberFormat("en-KE").format(displayTotal)}</b></p>}
                           </div>
                         </div>
@@ -768,7 +804,7 @@ export default function Home() {
                           href={`tel:${PHONE_NUMBER}`}
                           className="flex items-center justify-center gap-2 rounded-xl bg-[#0798ef] px-4 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-[#087bd0] hover:shadow-lg active:scale-[.98]"
                         >
-                          📞 Call Us
+                           Call Us
                         </a>
                         <a
                           href={`https://wa.me/254785709176?text=${whatsappText}`}
@@ -798,10 +834,10 @@ export default function Home() {
 
       <section id="about" className="bg-white">
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 text-center sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
-          <div className="rounded-2xl p-4 transition duration-200 hover:-translate-y-1 hover:bg-sky-50"><p className="text-3xl">💎</p><b>Quality Products</b><p className="text-sm text-slate-500">Trusted products for your home</p></div>
-          <div className="rounded-2xl p-4 transition duration-200 hover:-translate-y-1 hover:bg-sky-50"><p className="text-3xl">🚚</p><b>Countrywide Delivery</b><p className="text-sm text-slate-500">Right to your doorstep</p></div>
-          <div className="rounded-2xl p-4 transition duration-200 hover:-translate-y-1 hover:bg-sky-50"><p className="text-3xl">🛡️</p><b>Secure Payments</b><p className="text-sm text-slate-500">Safe &amp; hassle-free</p></div>
-          <div className="rounded-2xl p-4 transition duration-200 hover:-translate-y-1 hover:bg-sky-50"><p className="text-3xl">🎧</p><b>Customer Support</b><p className="text-sm text-slate-500">We&apos;re here to help</p></div>
+          <div className="rounded-2xl p-4 transition duration-200 hover:-translate-y-1 hover:bg-sky-50"><b>Quality Products</b><p className="text-sm text-slate-500">Trusted products for your home</p></div>
+          <div className="rounded-2xl p-4 transition duration-200 hover:-translate-y-1 hover:bg-sky-50"><b>Free Countrywide Delivery</b><p className="text-sm text-slate-500">Right to your doorstep</p></div>
+          <div className="rounded-2xl p-4 transition duration-200 hover:-translate-y-1 hover:bg-sky-50"><b>Secure Payments</b><p className="text-sm text-slate-500">Safe &amp; hassle-free</p></div>
+          <div className="rounded-2xl p-4 transition duration-200 hover:-translate-y-1 hover:bg-sky-50"><b>Customer Support</b><p className="text-sm text-slate-500">We&apos;re here to help</p></div>
         </div>
       </section>
 
@@ -847,7 +883,7 @@ export default function Home() {
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
               {feedbackSubmitted ? (
                 <div className="py-8 text-center">
-                  <div className="text-5xl">✓</div>
+                  
                   <h3 className="mt-4 text-2xl font-black text-[#0b2947]">
                     Thank You
                   </h3>
@@ -935,7 +971,7 @@ export default function Home() {
                 </form>
               ) : (
                 <div className="py-10 text-center">
-                  <div className="text-5xl">💬</div>
+                  
                   <h3 className="mt-4 text-2xl font-black">
                     We&apos;d Love to Hear From You
                   </h3>
@@ -959,11 +995,11 @@ export default function Home() {
             <div className="mt-4 space-y-3 text-sm text-white/75">
               <p className="flex items-start gap-2"><MdLocationOn className="mt-0.5 shrink-0 text-lg text-black" /><span>Gaberone Plaza, 4th Floor, Shop A13, Nairobi, Kenya</span></p>
               <a href="mailto:smarttechbetterliving@gmail.com" className="flex items-center gap-2 transition hover:text-white"><MdEmail className="inline text-lg text-black" /> <span>smarttechbetterliving@gmail.com</span></a>
-              <a href={`tel:${PHONE_NUMBER}`} className="flex items-center gap-2 transition hover:text-white"><span className="text-lg text-black">📞</span><span>+254 785 709 176</span></a>
+              <a href={`tel:${PHONE_NUMBER}`} className="flex items-center gap-2 transition hover:text-white"><span>+254 785 709 176</span></a>
               <a href="https://wa.me/254785709176?text=Hello%20Smart%20Tech.%20I%20would%20like%20to%20make%20an%20enquiry." target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 transition hover:text-white"><FaWhatsapp className="inline text-lg text-black" /> <span>WhatsApp Us</span></a>
             </div>
             <div className="mt-6 flex flex-wrap gap-3">
-              <a href={`tel:${PHONE_NUMBER}`} aria-label="Call Smart Tech" title="Call Smart Tech" className="grid h-12 w-12 place-items-center rounded-full border border-black/20 bg-white text-xl text-black transition duration-200 hover:-translate-y-1 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(0,0,0,.25)] active:scale-95">📞</a>
+              <a href={`tel:${PHONE_NUMBER}`} aria-label="Call Smart Tech" title="Call Smart Tech" className="grid h-12 w-12 place-items-center rounded-full border border-black/20 bg-white text-xl text-black transition duration-200 hover:-translate-y-1 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(0,0,0,.25)] active:scale-95">Call</a>
               <a href="https://wa.me/254785709176?text=Hello%20Smart%20Tech.%20I%20would%20like%20to%20make%20an%20enquiry." target="_blank" rel="noopener noreferrer" aria-label="Contact Smart Tech on WhatsApp" title="WhatsApp" className="grid h-12 w-12 place-items-center rounded-full border border-black/20 bg-white text-xl text-black transition duration-200 hover:-translate-y-1 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(0,0,0,.25)] active:scale-95"><FaWhatsapp /></a>
               <a href="https://www.facebook.com/share/1L7s2XPwM5/" target="_blank" rel="noopener noreferrer" aria-label="Visit Smart Tech on Facebook" title="Facebook" className="grid h-12 w-12 place-items-center rounded-full border border-black/20 bg-white text-xl text-black transition duration-200 hover:-translate-y-1 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(0,0,0,.25)] active:scale-95"><FaFacebookF /></a>
               <a href="mailto:smarttechbetterliving@gmail.com" aria-label="Email Smart Tech" title="Email" className="grid h-12 w-12 place-items-center rounded-full border border-black/20 bg-white text-xl text-black transition duration-200 hover:-translate-y-1 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(0,0,0,.25)] active:scale-95"><MdEmail /></a>
