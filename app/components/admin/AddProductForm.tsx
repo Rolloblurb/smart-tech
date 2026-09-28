@@ -62,9 +62,19 @@ export default function AddProductForm({
 
   const paymentPeriodLabel = (daysValue: string | number) => {
     const days = Number(daysValue);
-    if (!days || Number.isNaN(days) || days <= 0) return "";
-    const months = Math.ceil(days / 30);
-    return `${months} ${months === 1 ? "Month" : "Months"} (${days} ${days === 1 ? "Day" : "Days"})`;
+
+    if (!days || Number.isNaN(days) || days <= 0) {
+      return "";
+    }
+
+    const months = Math.max(
+      1,
+      Math.round((days * 12) / 365)
+    );
+
+    return `${months} ${months === 1 ? "Month" : "Months"} (${days} ${
+      days === 1 ? "Day" : "Days"
+    })`;
   };
 
   const totalPayable =

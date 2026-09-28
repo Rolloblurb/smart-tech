@@ -87,6 +87,14 @@ type StoreProduct = {
   product_variants: StoreVariant[];
 };
 
+type PublicReview = {
+  id: string;
+  customer_name: string;
+  rating: number;
+  feedback: string;
+  created_at: string;
+};
+
 type CookieChoice = "all" | "necessary";
 
 export default function Home() {
@@ -98,6 +106,8 @@ export default function Home() {
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackRating, setFeedbackRating] = useState(5);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [approvedReviews, setApprovedReviews] = useState<PublicReview[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState("");
@@ -112,10 +122,25 @@ export default function Home() {
 
   const paymentPeriodLabel = (daysValue: number | null) => {
     const days = Number(daysValue);
-    if (!days || Number.isNaN(days) || days <= 0) return "";
-    const months = Math.ceil(days / 30);
-    return `${months} ${months === 1 ? "Month" : "Months"} (${days} ${days === 1 ? "Day" : "Days"})`;
+
+    if (!days || Number.isNaN(days) || days <= 0) {
+      return "";
+    }
+
+    const months = Math.max(
+      1,
+      Math.round((days * 12) / 365)
+    );
+
+    return `${months} ${months === 1 ? "Month" : "Months"} (${days} ${
+      days === 1 ? "Day" : "Days"
+    })`;
   };
+
+  const approvedReviewCount = approvedReviews.length;
+  const averageReviewRating = approvedReviewCount > 0
+    ? approvedReviews.reduce((sum, review) => sum + Number(review.rating), 0) / approvedReviewCount
+    : 0;
 
   const filteredProducts = products.filter((product) => {
     const query = searchQuery.trim().toLowerCase();
@@ -222,6 +247,18 @@ export default function Home() {
       setCookieChoice(savedChoice);
     }
 
+    const loadApprovedReviews = async () => {
+      setReviewsLoading(true);
+      const { data, error } = await supabase
+        .from("customer_reviews")
+        .select("id,customer_name,rating,feedback,created_at")
+        .eq("approved", true)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (!error) setApprovedReviews((data ?? []) as PublicReview[]);
+      setReviewsLoading(false);
+    };
+
     const loadProducts = async () => {
       setProductsLoading(true);
       setProductsError("");
@@ -295,6 +332,7 @@ export default function Home() {
     };
 
     loadProducts();
+    loadApprovedReviews();
   }, []);
 
   const saveCookieChoice = (choice: CookieChoice) => {
@@ -886,6 +924,57 @@ export default function Home() {
         </div>
       </section>
 
+      <section id="reviews" className="border-t border-slate-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
+          <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[.3em] text-[#0798ef]">Customer Reviews</p>
+              <h2 className="mt-2 text-3xl font-black text-[#0b2947] sm:text-4xl">What Our Customers Say</h2>
+              <p className="mt-3 max-w-2xl leading-7 text-slate-600">Read experiences shared by Smart Tech customers.</p>
+            </div>
+            {approvedReviewCount > 0 && (
+              <div className="rounded-2xl border border-sky-100 bg-sky-50 px-5 py-4">
+                <p className="text-2xl font-black text-[#0b2947]">{averageReviewRating.toFixed(1)} / 5</p>
+                <p className="mt-1 text-sm font-bold text-amber-500">
+                  {"★".repeat(Math.round(averageReviewRating))}
+                  <span className="text-slate-300">{"★".repeat(5 - Math.round(averageReviewRating))}</span>
+                </p>
+                <p className="mt-1 text-xs font-bold text-slate-500">
+                  {approvedReviewCount} {approvedReviewCount === 1 ? "customer review" : "customer reviews"}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {reviewsLoading ? (
+            <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center font-bold text-slate-500">Loading customer reviews...</div>
+          ) : approvedReviews.length > 0 ? (
+            <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {approvedReviews.map((review) => {
+                const rating = Math.max(0, Math.min(5, Number(review.rating)));
+                return (
+                  <article key={review.id} className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="text-lg tracking-wider text-amber-500" aria-label={`${rating} out of 5 stars`}>
+                      {"★".repeat(rating)}<span className="text-slate-200">{"★".repeat(5 - rating)}</span>
+                    </div>
+                    <p className="mt-4 flex-1 whitespace-pre-wrap break-words leading-7 text-slate-600">&ldquo;{review.feedback}&rdquo;</p>
+                    <div className="mt-5 border-t border-slate-100 pt-4">
+                      <p className="font-black text-[#0b2947]">{review.customer_name}</p>
+                      <p className="mt-1 text-xs font-semibold text-slate-400">Smart Tech Customer</p>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-8 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+              <h3 className="text-xl font-black text-[#0b2947]">Customer reviews will appear here</h3>
+              <p className="mt-2 text-slate-500">Be among the first to share your Smart Tech experience.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
       <section id="feedback" className="border-t border-slate-200 bg-[#f7f9fc]">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
           <div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
@@ -930,11 +1019,10 @@ export default function Home() {
                 <div className="py-8 text-center">
                   
                   <h3 className="mt-4 text-2xl font-black text-[#0b2947]">
-                    Thank You
+                    Thank you for your feedback!
                   </h3>
-                  <p className="mt-2 text-slate-600">
-                    Your feedback has been submitted successfully and is awaiting
-                    Smart Tech admin approval before appearing publicly.
+                  <p className="mx-auto mt-3 max-w-lg leading-7 text-slate-600">
+                    We appreciate you taking the time to share your experience with Smart Tech.
                   </p>
                   <button
                     type="button"
