@@ -120,22 +120,6 @@ export default function Home() {
   const [imageZoom, setImageZoom] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
 
-  const paymentPeriodLabel = (daysValue: number | null) => {
-    const days = Number(daysValue);
-
-    if (!days || Number.isNaN(days) || days <= 0) {
-      return "";
-    }
-
-    const months = Math.max(
-      1,
-      Math.round((days * 12) / 365)
-    );
-
-    return `${months} ${months === 1 ? "Month" : "Months"} (${days} ${
-      days === 1 ? "Day" : "Days"
-    })`;
-  };
 
   const approvedReviewCount = approvedReviews.length;
   const averageReviewRating = approvedReviewCount > 0
@@ -785,12 +769,6 @@ export default function Home() {
                 const displayDaily = selectedVariant
                   ? selectedVariant.daily_payment
                   : product.daily_payment;
-                const displayDays = selectedVariant
-                  ? selectedVariant.payment_days
-                  : product.payment_days;
-                const displayTotal = selectedVariant
-                  ? selectedVariant.total_payable
-                  : product.total_payable;
 
                 const whatsappText = encodeURIComponent(
                   `Hello Smart Tech, I am interested in ${product.name}${selectedVariant ? ` — ${selectedVariant.variant_name}` : ""}. Please share more information about the cash and Lipa Mdogo Mdogo options.`
@@ -869,12 +847,10 @@ export default function Home() {
                         <div className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm">
                           <p className="font-black text-emerald-800">Lipa Mdogo Mdogo</p>
                           <div className="mt-2 grid gap-1 text-emerald-700">
+                            <p>Item Price: <b>KSh {new Intl.NumberFormat("en-KE").format(displayPrice)}</b></p>
                             <p>Deposit: <b>KSh {new Intl.NumberFormat("en-KE").format(displayDeposit ?? 0)}</b></p>
                             <p>Daily: <b>KSh {new Intl.NumberFormat("en-KE").format(displayDaily ?? 0)}/day</b></p>
-                            {displayDays !== null && (
-                              <p>Payment Period: <b>{paymentPeriodLabel(displayDays)}</b></p>
-                            )}
-                            {displayTotal !== null && <p>Total Payable: <b>KSh {new Intl.NumberFormat("en-KE").format(displayTotal)}</b></p>}
+                            <p>Payment Period: <b>12 Months</b></p>
                           </div>
                         </div>
                       )}

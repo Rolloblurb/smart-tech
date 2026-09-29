@@ -12,13 +12,13 @@ type Props = {
 type ProductVariantForm = {
   variantName: string; cashPrice: string; stockQuantity: string;
   availability: string; lipaAvailable: boolean; depositAmount: string;
-  dailyPayment: string; paymentDays: string;
+  dailyPayment: string;
 };
 
 const createEmptyVariant = (): ProductVariantForm => ({
   variantName: "", cashPrice: "", stockQuantity: "1",
   availability: "Available", lipaAvailable: false,
-  depositAmount: "", dailyPayment: "", paymentDays: "",
+  depositAmount: "", dailyPayment: "",
 });
 
 const initialForm = {
@@ -37,7 +37,6 @@ const initialForm = {
   lipaAvailable: false,
   depositAmount: "",
   dailyPayment: "",
-  paymentDays: "",
 };
 
 export default function AddProductForm({
@@ -60,31 +59,7 @@ export default function AddProductForm({
   const inputClass =
     "mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-[#0798ef] focus:ring-4 focus:ring-sky-100";
 
-  const paymentPeriodLabel = (daysValue: string | number) => {
-    const days = Number(daysValue);
 
-    if (!days || Number.isNaN(days) || days <= 0) {
-      return "";
-    }
-
-    const months = Math.max(
-      1,
-      Math.round((days * 12) / 365)
-    );
-
-    return `${months} ${months === 1 ? "Month" : "Months"} (${days} ${
-      days === 1 ? "Day" : "Days"
-    })`;
-  };
-
-  const totalPayable =
-    form.lipaAvailable &&
-    form.depositAmount &&
-    form.dailyPayment &&
-    form.paymentDays
-      ? Number(form.depositAmount) +
-        Number(form.dailyPayment) * Number(form.paymentDays)
-      : 0;
 
  const handleSubmit = async (
   event: FormEvent<HTMLFormElement>
@@ -149,14 +124,11 @@ export default function AddProductForm({
 
     let depositAmount: number | null = null;
     let dailyPayment: number | null = null;
-    let paymentDays: number | null = null;
-    let calculatedTotal: number | null = null;
 
     if (!useVariants && form.lipaAvailable) {
       if (
         !form.depositAmount ||
-        !form.dailyPayment ||
-        !form.paymentDays
+        !form.dailyPayment
       ) {
         throw new Error(
           "Complete all Lipa Mdogo Mdogo payment fields."
@@ -168,9 +140,6 @@ export default function AddProductForm({
 
       dailyPayment =
         Number(form.dailyPayment);
-
-      paymentDays =
-        Number(form.paymentDays);
 
       if (
         Number.isNaN(depositAmount) ||
@@ -189,19 +158,6 @@ export default function AddProductForm({
           "Please enter a valid daily payment."
         );
       }
-
-      if (
-        Number.isNaN(paymentDays) ||
-        paymentDays <= 0
-      ) {
-        throw new Error(
-          "Please enter a valid number of payment days."
-        );
-      }
-
-      calculatedTotal =
-        depositAmount +
-        dailyPayment * paymentDays;
     }
 
     // ==================================================
@@ -216,9 +172,9 @@ export default function AddProductForm({
         if (variant.stockQuantity === "" || Number.isNaN(Number(variant.stockQuantity)) || Number(variant.stockQuantity) < 0)
           throw new Error(`${label}: enter a valid stock quantity.`);
         if (variant.lipaAvailable) {
-          if (!variant.depositAmount || !variant.dailyPayment || !variant.paymentDays)
-            throw new Error(`${label}: complete all Lipa Mdogo Mdogo fields.`);
-          if (Number(variant.depositAmount) < 0 || Number(variant.dailyPayment) <= 0 || Number(variant.paymentDays) <= 0)
+          if (!variant.depositAmount || !variant.dailyPayment)
+            throw new Error(`${label}: complete the deposit and daily payment fields.`);
+          if (Number(variant.depositAmount) < 0 || Number(variant.dailyPayment) <= 0)
             throw new Error(`${label}: enter valid Lipa Mdogo Mdogo values.`);
         }
       });
@@ -303,9 +259,9 @@ export default function AddProductForm({
         daily_payment:
           dailyPayment,
         payment_days:
-          paymentDays,
+          !useVariants && form.lipaAvailable ? 365 : null,
         total_payable:
-          calculatedTotal,
+          null,
       }
     );
 
@@ -373,10 +329,10 @@ export default function AddProductForm({
           useVariants ? null : form.lipaAvailable ? dailyPayment : null,
 
         payment_days:
-          useVariants ? null : form.lipaAvailable ? paymentDays : null,
+          useVariants ? null : form.lipaAvailable ? 365 : null,
 
         total_payable:
-          useVariants ? null : form.lipaAvailable ? calculatedTotal : null,
+          null,
       })
       .select("id,name")
       .single();
@@ -438,7 +394,6 @@ export default function AddProductForm({
       const variantRows = variants.map((variant, index) => {
         const deposit = variant.lipaAvailable ? Number(variant.depositAmount) : null;
         const daily = variant.lipaAvailable ? Number(variant.dailyPayment) : null;
-        const days = variant.lipaAvailable ? Number(variant.paymentDays) : null;
         return {
           product_id: product.id,
           variant_name: variant.variantName.trim(),
@@ -446,9 +401,10 @@ export default function AddProductForm({
           stock_quantity: Number(variant.stockQuantity),
           availability: variant.availability,
           lipa_mdogo_mdogo_available: variant.lipaAvailable,
-          deposit_amount: deposit, daily_payment: daily, payment_days: days,
-          total_payable: variant.lipaAvailable && deposit !== null && daily !== null && days !== null
-            ? deposit + daily * days : null,
+          deposit_amount: deposit,
+          daily_payment: daily,
+          payment_days: variant.lipaAvailable ? 365 : null,
+          total_payable: null,
           display_order: index,
         };
       });
@@ -922,8 +878,6 @@ Suitable for: Off-grid & Hybrid Systems`
               </button>
             </div>
             {variants.map((variant, index) => {
-              const total = variant.lipaAvailable && variant.depositAmount && variant.dailyPayment && variant.paymentDays
-                ? Number(variant.depositAmount) + Number(variant.dailyPayment) * Number(variant.paymentDays) : 0;
               return (
                 <div key={index} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                   <div className="flex justify-between"><h3 className="font-black">Variant {index + 1}</h3>
@@ -955,18 +909,12 @@ Suitable for: Off-grid & Hybrid Systems`
                         onChange={e=>updateVariant(index,{depositAmount:e.target.value})} className={inputClass}/></label>
                       <label className="text-sm font-bold">Daily Payment (KSh)<input type="number" min="1" value={variant.dailyPayment}
                         onChange={e=>updateVariant(index,{dailyPayment:e.target.value})} className={inputClass}/></label>
-                      <label className="text-sm font-bold">Number of Days<input type="number" min="1" value={variant.paymentDays}
-                        onChange={e=>updateVariant(index,{paymentDays:e.target.value})} className={inputClass}/>
-                        {variant.paymentDays && (
-                          <span className="mt-2 block rounded-lg bg-sky-50 px-3 py-2 text-xs font-black text-[#087bd0]">
-                            Payment Period: {paymentPeriodLabel(variant.paymentDays)}
-                          </span>
-                        )}
-                      </label>
-                      <div><p className="text-sm font-bold">Total Payable</p>
-                        <div className="mt-2 rounded-xl bg-emerald-50 px-4 py-3 font-black text-emerald-800">
-                          KSh {new Intl.NumberFormat("en-KE").format(total)}
-                        </div></div>
+                      <div>
+                        <p className="text-sm font-bold">Payment Period</p>
+                        <div className="mt-2 rounded-xl bg-sky-50 px-4 py-3 font-black text-[#087bd0]">
+                          12 Months
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1046,41 +994,10 @@ Suitable for: Off-grid & Hybrid Systems`
               />
             </label>
 
-            <label className="text-sm font-bold">
-              Number of Days
-
-              <input
-                required
-                min="1"
-                step="1"
-                type="number"
-                value={form.paymentDays}
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    paymentDays: event.target.value,
-                  })
-                }
-                className={inputClass}
-                placeholder="150"
-              />
-              {form.paymentDays && (
-                <span className="mt-2 block rounded-lg bg-sky-50 px-3 py-2 text-xs font-black text-[#087bd0]">
-                  Payment Period: {paymentPeriodLabel(form.paymentDays)}
-                </span>
-              )}
-            </label>
-
             <div>
-              <p className="text-sm font-bold">
-                Total Payable
-              </p>
-
-              <div className="mt-2 rounded-xl bg-emerald-50 px-4 py-3 font-black text-emerald-800">
-                KSh{" "}
-                {new Intl.NumberFormat(
-                  "en-KE"
-                ).format(totalPayable)}
+              <p className="text-sm font-bold">Payment Period</p>
+              <div className="mt-2 rounded-xl bg-sky-50 px-4 py-3 font-black text-[#087bd0]">
+                12 Months
               </div>
             </div>
           </div>

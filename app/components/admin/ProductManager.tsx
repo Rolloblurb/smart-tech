@@ -87,7 +87,6 @@ export default function ProductManager({
   const [editLipa, setEditLipa] = useState(false);
   const [editDeposit, setEditDeposit] = useState("");
   const [editDaily, setEditDaily] = useState("");
-  const [editDays, setEditDays] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
@@ -101,7 +100,6 @@ export default function ProductManager({
     lipa_mdogo_mdogo_available: false,
     deposit_amount: "",
     daily_payment: "",
-    payment_days: "",
   });
 
   const openEdit = (product: Product) => {
@@ -121,7 +119,6 @@ export default function ProductManager({
     setEditLipa(product.lipa_mdogo_mdogo_available);
     setEditDeposit(product.deposit_amount == null ? "" : String(product.deposit_amount));
     setEditDaily(product.daily_payment == null ? "" : String(product.daily_payment));
-    setEditDays(product.payment_days == null ? "" : String(product.payment_days));
     onError("");
     onMessage("");
   };
@@ -132,16 +129,13 @@ export default function ProductManager({
       onError("Product name, cash price and stock quantity are required.");
       return;
     }
-    if (editLipa && (!editDeposit || !editDaily || !editDays)) {
+    if (editLipa && (!editDeposit || !editDaily)) {
       onError("Complete all Lipa Mdogo Mdogo payment fields.");
       return;
     }
 
     setSavingEdit(true);
     onError("");
-    const total = editLipa
-      ? Number(editDeposit) + Number(editDaily) * Number(editDays)
-      : null;
 
     const { error } = await supabase
       .from("products")
@@ -161,8 +155,8 @@ export default function ProductManager({
         lipa_mdogo_mdogo_available: editLipa,
         deposit_amount: editLipa ? Number(editDeposit) : null,
         daily_payment: editLipa ? Number(editDaily) : null,
-        payment_days: editLipa ? Number(editDays) : null,
-        total_payable: total,
+        payment_days: editLipa ? 365 : null,
+        total_payable: null,
       })
       .eq("id", editing.id);
 
@@ -204,14 +198,6 @@ export default function ProductManager({
     onError("");
     onMessage("");
 
-    const total = variant.lipa_mdogo_mdogo_available &&
-      variant.deposit_amount !== null &&
-      variant.daily_payment !== null &&
-      variant.payment_days !== null
-        ? Number(variant.deposit_amount) +
-          Number(variant.daily_payment) * Number(variant.payment_days)
-        : null;
-
     const { error } = await supabase
       .from("product_variants")
       .update({
@@ -222,8 +208,8 @@ export default function ProductManager({
         lipa_mdogo_mdogo_available: variant.lipa_mdogo_mdogo_available,
         deposit_amount: variant.lipa_mdogo_mdogo_available ? variant.deposit_amount : null,
         daily_payment: variant.lipa_mdogo_mdogo_available ? variant.daily_payment : null,
-        payment_days: variant.lipa_mdogo_mdogo_available ? variant.payment_days : null,
-        total_payable: variant.lipa_mdogo_mdogo_available ? total : null,
+        payment_days: variant.lipa_mdogo_mdogo_available ? 365 : null,
+        total_payable: null,
       })
       .eq("id", variant.id);
 
@@ -266,11 +252,12 @@ export default function ProductManager({
 
     const deposit = newVariant.lipa_mdogo_mdogo_available ? Number(newVariant.deposit_amount) : null;
     const daily = newVariant.lipa_mdogo_mdogo_available ? Number(newVariant.daily_payment) : null;
-    const days = newVariant.lipa_mdogo_mdogo_available ? Number(newVariant.payment_days) : null;
 
-    if (newVariant.lipa_mdogo_mdogo_available &&
-      (!newVariant.deposit_amount || !newVariant.daily_payment || !newVariant.payment_days)) {
-      onError("Complete all Lipa Mdogo Mdogo fields for the new variant.");
+    if (
+      newVariant.lipa_mdogo_mdogo_available &&
+      (!newVariant.deposit_amount || !newVariant.daily_payment)
+    ) {
+      onError("Complete the deposit and daily payment fields for the new variant.");
       return;
     }
 
@@ -285,9 +272,8 @@ export default function ProductManager({
         lipa_mdogo_mdogo_available: newVariant.lipa_mdogo_mdogo_available,
         deposit_amount: deposit,
         daily_payment: daily,
-        payment_days: days,
-        total_payable: newVariant.lipa_mdogo_mdogo_available && deposit !== null && daily !== null && days !== null
-          ? deposit + daily * days : null,
+        payment_days: newVariant.lipa_mdogo_mdogo_available ? 365 : null,
+        total_payable: null,
         display_order: variants.length,
       });
 
@@ -299,7 +285,7 @@ export default function ProductManager({
     setNewVariant({
       variant_name: "", cash_price: "", stock_quantity: "1",
       availability: "Available", lipa_mdogo_mdogo_available: false,
-      deposit_amount: "", daily_payment: "", payment_days: "",
+      deposit_amount: "", daily_payment: "",
     });
     onMessage("New variant added.");
     await loadVariants(variantProduct);
@@ -318,12 +304,6 @@ export default function ProductManager({
     ).format(value)}`;
   };
 
-  const paymentPeriodLabel = (daysValue: string | number | null) => {
-    const days = Number(daysValue);
-    if (!days || Number.isNaN(days) || days <= 0) return "—";
-    const months = Math.ceil(days / 30);
-    return `${months} ${months === 1 ? "Month" : "Months"} (${days} ${days === 1 ? "Day" : "Days"})`;
-  };
 
   // -----------------------------------------
   // CHANGE PRODUCT AVAILABILITY
@@ -804,42 +784,9 @@ export default function ProductManager({
                         </p>
 
                       </div>
-
-
                       <div>
-
-                        <span className="text-slate-500">
-                          Days
-                        </span>
-
-                        <p className="font-black">
-
-                          {
-                            product.payment_days ??
-                            "—"
-                          }
-
-                        </p>
-
-                      </div>
-
-
-                      <div>
-
-                        <span className="text-slate-500">
-                          Total
-                        </span>
-
-                        <p className="font-black text-emerald-700">
-
-                          {
-                            money(
-                              product.total_payable
-                            )
-                          }
-
-                        </p>
-
+                        <span className="text-slate-500">Payment Period</span>
+                        <p className="font-black">12 Months</p>
                       </div>
 
                     </>
@@ -1002,19 +949,12 @@ export default function ProductManager({
                         <label className="text-sm font-bold">Daily Payment<input type="number" min="1" value={variant.daily_payment ?? ""}
                           onChange={e=>setVariants(current=>current.map(v=>v.id===variant.id?{...v,daily_payment:e.target.value===""?null:Number(e.target.value)}:v))}
                           className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
-                        <label className="text-sm font-bold">Days<input type="number" min="1" value={variant.payment_days ?? ""}
-                          onChange={e=>setVariants(current=>current.map(v=>v.id===variant.id?{...v,payment_days:e.target.value===""?null:Number(e.target.value)}:v))}
-                          className="mt-2 w-full rounded-xl border px-4 py-3"/>
-                          {variant.payment_days !== null && (
-                            <span className="mt-2 block rounded-lg bg-sky-50 px-3 py-2 text-xs font-black text-[#087bd0]">
-                              {paymentPeriodLabel(variant.payment_days)}
-                            </span>
-                          )}
-                        </label>
-                        <div><p className="text-sm font-bold">Total</p><div className="mt-2 rounded-xl bg-emerald-50 px-4 py-3 font-black text-emerald-800">
-                          {money(variant.deposit_amount !== null && variant.daily_payment !== null && variant.payment_days !== null
-                            ? Number(variant.deposit_amount)+Number(variant.daily_payment)*Number(variant.payment_days):null)}
-                        </div></div>
+                        <div>
+                          <p className="text-sm font-bold">Payment Period</p>
+                          <div className="mt-2 rounded-xl bg-sky-50 px-4 py-3 font-black text-[#087bd0]">
+                            12 Months
+                          </div>
+                        </div>
                       </div>
                     )}
                     <button type="button" disabled={savingVariantId===variant.id} onClick={()=>saveVariant(variant)}
@@ -1037,13 +977,12 @@ export default function ProductManager({
                     <div className="mt-4 grid gap-4 md:grid-cols-3">
                       <label className="text-sm font-bold">Deposit<input type="number" min="0" value={newVariant.deposit_amount} onChange={e=>setNewVariant({...newVariant,deposit_amount:e.target.value})} className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
                       <label className="text-sm font-bold">Daily Payment<input type="number" min="1" value={newVariant.daily_payment} onChange={e=>setNewVariant({...newVariant,daily_payment:e.target.value})} className="mt-2 w-full rounded-xl border px-4 py-3"/></label>
-                      <label className="text-sm font-bold">Days<input type="number" min="1" value={newVariant.payment_days} onChange={e=>setNewVariant({...newVariant,payment_days:e.target.value})} className="mt-2 w-full rounded-xl border px-4 py-3"/>
-                        {newVariant.payment_days && (
-                          <span className="mt-2 block rounded-lg bg-sky-50 px-3 py-2 text-xs font-black text-[#087bd0]">
-                            {paymentPeriodLabel(newVariant.payment_days)}
-                          </span>
-                        )}
-                      </label>
+                      <div>
+                        <p className="text-sm font-bold">Payment Period</p>
+                        <div className="mt-2 rounded-xl bg-sky-50 px-4 py-3 font-black text-[#087bd0]">
+                          12 Months
+                        </div>
+                      </div>
                     </div>
                   )}
                   <button type="button" onClick={addNewVariant} className="mt-4 rounded-xl bg-emerald-600 px-5 py-2.5 font-black text-white">+ Add Variant</button>
@@ -1088,14 +1027,12 @@ export default function ProductManager({
               <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 <label className="text-sm font-bold">Deposit<input type="number" min="0" value={editDeposit} onChange={(e) => setEditDeposit(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
                 <label className="text-sm font-bold">Daily Payment<input type="number" min="0" value={editDaily} onChange={(e) => setEditDaily(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" /></label>
-                <label className="text-sm font-bold">Payment Days<input type="number" min="1" value={editDays} onChange={(e) => setEditDays(e.target.value)} className="mt-2 w-full rounded-xl border px-4 py-3" />
-                  {editDays && (
-                    <span className="mt-2 block rounded-lg bg-sky-50 px-3 py-2 text-xs font-black text-[#087bd0]">
-                      {paymentPeriodLabel(editDays)}
-                    </span>
-                  )}
-                </label>
-                <div><p className="text-sm font-bold">Total Payable</p><div className="mt-2 rounded-xl bg-emerald-50 px-4 py-3 font-black text-emerald-800">{money(Number(editDeposit || 0) + Number(editDaily || 0) * Number(editDays || 0))}</div></div>
+                <div>
+                  <p className="text-sm font-bold">Payment Period</p>
+                  <div className="mt-2 rounded-xl bg-sky-50 px-4 py-3 font-black text-[#087bd0]">
+                    12 Months
+                  </div>
+                </div>
               </div>
             )}
 
