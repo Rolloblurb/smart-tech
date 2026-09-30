@@ -500,6 +500,47 @@ export default function Home() {
       </section>
 
       <section
+        aria-label="M-KOPA partnership"
+        className="border-b border-slate-200 bg-white"
+      >
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+          <div className="flex flex-col items-center gap-5 rounded-3xl border border-slate-200 bg-gradient-to-r from-white via-emerald-50/60 to-white p-5 shadow-sm sm:flex-row sm:justify-between sm:p-7">
+            <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+              <div className="flex h-20 w-44 shrink-0 items-center justify-center rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+                <Image
+                  src="/images/partners/m-kopa.png"
+                  alt="M-KOPA Kenya"
+                  width={240}
+                  height={100}
+                  className="h-auto max-h-14 w-auto max-w-full object-contain"
+                />
+              </div>
+
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
+                  Trusted Partnership
+                </p>
+                <h2 className="mt-1 text-2xl font-black text-[#0b2947] sm:text-3xl">
+                  Official Partner of M-KOPA Kenya
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+                  Smart Tech is an official M-KOPA Kenya partner, helping customers
+                  access selected products through flexible financing options.
+                </p>
+              </div>
+            </div>
+
+            <a
+              href="#products"
+              className="shrink-0 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg"
+            >
+              View Eligible Products
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section
         id="home"
         className="relative overflow-hidden bg-gradient-to-r from-[#062c4a] via-[#074c79] to-[#0a75a7] text-white"
         onMouseEnter={() => setHeroPaused(true)}
